@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
 import { createAsset, updateAsset } from "@/lib/actions/assets";
-import { Plus } from "lucide-react";
+import { getUsersPublic } from "@/lib/actions/users";
+import { Plus, Users } from "lucide-react";
+import { useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { Asset } from "@prisma/client";
@@ -23,6 +26,7 @@ const formSchema = z.object({
     currentUsage: z.coerce.number().min(0),
     image: z.string().optional(),
     details: z.record(z.string(), z.any()).default({}),
+    sharedUserIds: z.array(z.string()).default([]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -34,11 +38,18 @@ interface AddAssetDialogProps {
 
 export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const [open, setOpen] = useState(false);
+    const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (open) {
+            getUsersPublic().then(setAvailableUsers).catch(console.error);
+        }
+    }, [open]);
 
     const initialDetails = asset?.details ? JSON.parse(asset.details) : {};
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         values: {
             name: asset?.name || "",
             type: asset?.type || ASSET_TYPES.CAR,
@@ -46,6 +57,7 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
             currentUsage: asset?.currentUsage || 0,
             image: asset?.image || "",
             details: initialDetails,
+            sharedUserIds: (asset as any)?.sharedWith?.map((s: any) => s.userId) || [],
         },
     });
 
@@ -302,6 +314,50 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                                 </FormItem>
                             )}
                         />
+
+                        {/* Sharing Section */}
+                        <div className="space-y-3 pt-2 border-t">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase">
+                                <Users className="h-4 w-4" />
+                                Share with Users
+                            </div>
+                            <FormField
+                                control={form.control}
+                                name="sharedUserIds"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="grid grid-cols-1 gap-2 max-h-[150px] overflow-y-auto p-3 border rounded-md">
+                                            {availableUsers.map((user) => (
+                                                <div key={user.id} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`user-${user.id}`}
+                                                        checked={field.value.includes(user.id)}
+                                                        onCheckedChange={(checked) => {
+                                                            const newValue = checked
+                                                                ? [...field.value, user.id]
+                                                                : field.value.filter((id) => id !== user.id);
+                                                            field.onChange(newValue);
+                                                        }}
+                                                    />
+                                                    <label
+                                                        htmlFor={`user-${user.id}`}
+                                                        className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                    >
+                                                        {user.name} <span className="text-xs text-muted-foreground">({user.email})</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                            {availableUsers.length === 0 && (
+                                                <p className="text-xs text-muted-foreground italic text-center py-2">
+                                                    No other users found to share with.
+                                                </p>
+                                            )}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <Button type="submit" className="w-full">
                             {isEditing ? "Save Changes" : "Create Asset"}
                         </Button>

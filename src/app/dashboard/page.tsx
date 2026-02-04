@@ -1,8 +1,10 @@
 import { getAssets } from "@/lib/actions/assets";
 import { AssetCard } from "@/components/assets/AssetCard";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
+import { auth } from "@/auth";
 
 export default async function DashboardPage() {
+    const session = await auth();
     const assets = await getAssets();
 
     return (
@@ -23,7 +25,7 @@ export default async function DashboardPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {assets.map((asset) => (
-                        <AssetCard key={asset.id} asset={asset} />
+                        <AssetCard key={asset.id} asset={asset} currentUserId={session?.user?.id} />
                     ))}
                 </div>
             )}

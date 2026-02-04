@@ -12,8 +12,8 @@ const AssetSchema = z.object({
     type: z.string(),
     trackingMethod: z.string(),
     details: z.string().optional(), // JSON string
-    currentUsage: z.number().default(0),
     image: z.string().optional(),
+    sharedUserIds: z.array(z.string()).optional(),
 });
 
 export async function createAsset(data: z.infer<typeof AssetSchema>) {
@@ -25,10 +25,17 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
     await ensurePermission("CREATE", "ASSET");
 
     try {
+        const { sharedUserIds, ...assetData } = data;
         const asset = await prisma.asset.create({
             data: {
-                ...data,
+                ...assetData,
                 userId: session.user.id,
+                sharedWith: {
+                    create: sharedUserIds?.map((userId) => ({
+                        userId,
+                        permission: "READ", // Default permission
+                    })) || [],
+                },
             },
         });
 
@@ -54,7 +61,22 @@ export async function getAssets() {
             ],
         },
         include: {
-            sharedWith: true,
+            owner: {
+                select: {
+                    name: true,
+                    email: true,
+                },
+            },
+            sharedWith: {
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+            },
         },
         orderBy: {
             createdAt: "desc",
@@ -117,9 +139,33 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     }
 
     try {
-        const asset = await prisma.asset.update({
-            where: { id },
-            data,
+        const { sharedUserIds, ...assetData } = data;
+
+        // Use a transaction to ensure atomic update and sharing sync
+        const asset = await prisma.$transaction(async (tx) => {
+            // Update the asset data
+            const updated = await tx.asset.update({
+                where: { id },
+                data: assetData,
+            });
+
+            if (sharedUserIds !== undefined) {
+                // Remove old shares
+                await tx.assetShare.deleteMany({
+                    where: { assetId: id },
+                });
+
+                // Create new shares
+                await tx.assetShare.createMany({
+                    data: sharedUserIds.map((userId) => ({
+                        assetId: id,
+                        userId,
+                        permission: "READ",
+                    })),
+                });
+            }
+
+            return updated;
         });
 
         revalidatePath("/dashboard");

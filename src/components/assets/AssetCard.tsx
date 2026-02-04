@@ -14,11 +14,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface AssetCardProps {
-    asset: Asset;
+    asset: any;
+    currentUserId?: string;
     onDelete?: (id: string) => void;
 }
 
-export function AssetCard({ asset, onDelete }: AssetCardProps) {
+export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
 
     return (
@@ -55,8 +56,23 @@ export function AssetCard({ asset, onDelete }: AssetCardProps) {
                             <Icon className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                            <h3 className="font-semibold leading-none tracking-tight text-lg drop-shadow-sm">{asset.name}</h3>
-                            <p className="text-xs text-muted-foreground font-medium uppercase mt-1 tracking-wider">{asset.type}</p>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-semibold leading-none tracking-tight text-lg drop-shadow-sm">{asset.name}</h3>
+                                {asset.userId !== currentUserId && (
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-200 border-blue-500/30">
+                                        Shared
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-xs text-muted-foreground font-medium uppercase mt-1 tracking-wider">
+                                {asset.type}
+                                {asset.userId !== currentUserId && asset.owner && (
+                                    <span className="ml-1 opacity-70 normal-case">by {asset.owner.name}</span>
+                                )}
+                                {asset.userId === currentUserId && asset.sharedWith?.length > 0 && (
+                                    <span className="ml-1 opacity-70 normal-case">• Shared with {asset.sharedWith.length}</span>
+                                )}
+                            </p>
                         </div>
                     </div>
 

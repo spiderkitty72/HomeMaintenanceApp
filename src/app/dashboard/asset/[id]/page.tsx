@@ -34,6 +34,11 @@ export default async function AssetDetailPage({ params }: { params: { id: string
         where: { id },
         include: {
             owner: true,
+            sharedWith: {
+                include: {
+                    user: true,
+                },
+            },
         },
     });
 
@@ -186,20 +191,20 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                 {/* Main Content */}
                 <div className="lg:col-span-2">
                     <Tabs defaultValue="service" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 mb-6">
-                            <TabsTrigger value="service" className="flex items-center">
+                        <TabsList className="flex flex-wrap !h-auto w-full gap-2 p-1 bg-muted/50 border rounded-xl mb-6 justify-start">
+                            <TabsTrigger value="service" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <History className="h-4 w-4 mr-2" /> History
                             </TabsTrigger>
-                            <TabsTrigger value="fuel" className="flex items-center">
+                            <TabsTrigger value="fuel" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <Droplet className="h-4 w-4 mr-2" /> Fuel
                             </TabsTrigger>
-                            <TabsTrigger value="schedules" className="flex items-center">
+                            <TabsTrigger value="schedules" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <Bell className="h-4 w-4 mr-2" /> Reminders
                             </TabsTrigger>
-                            <TabsTrigger value="specs" className="flex items-center">
+                            <TabsTrigger value="specs" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <ListChecks className="h-4 w-4 mr-2" /> Specs
                             </TabsTrigger>
-                            <TabsTrigger value="parts" className="flex items-center">
+                            <TabsTrigger value="parts" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <Package className="h-4 w-4 mr-2" /> Parts
                             </TabsTrigger>
                         </TabsList>

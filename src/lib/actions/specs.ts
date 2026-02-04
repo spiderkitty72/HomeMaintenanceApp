@@ -45,7 +45,7 @@ export async function getAssetSpecs(assetId: string) {
     });
 }
 
-export async function upsertAssetSpec(assetId: string, specTypeId: string, value: number) {
+export async function upsertAssetSpec(assetId: string, specTypeId: string, value: string) {
     await ensureAuth(); // Basic check
 
     // Check if it exists

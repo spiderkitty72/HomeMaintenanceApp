@@ -140,7 +140,7 @@ model AssetSpec {
   id         String   @id @default(cuid())
   assetId    String
   specTypeId String
-  value      Float
+  value      String
   
   asset      Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
   specType   AssetSpecType @relation(fields: [specTypeId], references: [id], onDelete: Cascade)

@@ -32,7 +32,7 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
     async function loadSpecTypes() {
         try {
             const types = await getSpecTypes();
-            setSpecTypes(types);
+            setSpecTypes(types as any);
         } catch (error) {
             toast.error("Failed to load specification types");
         }
@@ -45,7 +45,7 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
         }
         try {
             const newType = await addSpecType(newTypeName, newTypeUnit || null);
-            setSpecTypes([...specTypes, newType]);
+            setSpecTypes([...specTypes, newType as any]);
             setSelectedTypeId(newType.id);
             setIsAddingNewType(false);
             setNewTypeName("");
@@ -62,14 +62,8 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
             return;
         }
 
-        const numValue = parseFloat(value);
-        if (isNaN(numValue)) {
-            toast.error("Value must be a number");
-            return;
-        }
-
         try {
-            await upsertAssetSpec(assetId, selectedTypeId, numValue);
+            await upsertAssetSpec(assetId, selectedTypeId, value);
             toast.success("Specification added successfully");
             setOpen(false);
             resetForm();
@@ -163,9 +157,7 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
                     <div className="space-y-1">
                         <div className="text-[10px] uppercase font-bold text-muted-foreground">Value {selectedType?.unit ? `(${selectedType.unit})` : ""}</div>
                         <Input
-                            type="number"
-                            step="any"
-                            placeholder="Enter decimal value"
+                            placeholder="Enter value"
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
                         />

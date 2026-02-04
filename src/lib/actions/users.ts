@@ -33,6 +33,29 @@ export async function getUsers() {
     });
 }
 
+export async function getUsersPublic() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.user.findMany({
+        where: {
+            NOT: {
+                id: session.user.id,
+            },
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+        },
+        orderBy: {
+            name: "asc",
+        },
+    });
+}
+
 export async function createUser(data: z.infer<typeof CreateUserSchema>) {
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
