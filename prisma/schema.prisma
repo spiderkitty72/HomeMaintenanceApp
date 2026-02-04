@@ -1,0 +1,247 @@
+// This is your Prisma schema file.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth.js Models ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER") // ADMIN, USER
+  preferences   String?   // JSON string
+
+  accounts      Account[]
+  sessions      Session[]
+  assets        Asset[]
+  sharedAssets  AssetShare[]
+  parts         Part[]
+  groups        GroupMember[]
+  partPurchases PartPurchase[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMember[]
+  permissions Permission[]
+}
+
+model GroupMember {
+  id      String @id @default(cuid())
+  groupId String
+  userId  String
+  
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Permission {
+  id      String @id @default(cuid())
+  groupId String
+  action  String // CREATE, EDIT, DELETE, VIEW
+  resource String // ASSET, SERVICE, FUEL, PART
+  
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, action, resource])
+}
+
+// --- Application Models ---
+
+model Asset {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String
+  type           String   // Car, House, Utility
+  trackingMethod String   // Mileage, Hours, DateOnly
+  details        String?  // JSON for flexible fields (VIN, Address, etc)
+  currentUsage   Float    @default(0)
+  image          String?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  owner          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sharedWith     AssetShare[]
+  
+  serviceRecords ServiceRecord[]
+  fuelRecords    FuelRecord[]
+  schedules      ServiceSchedule[]
+  compatibilities AssetPartCompatibility[]
+}
+
+model AssetShare {
+  id         String @id @default(cuid())
+  assetId    String
+  userId     String
+  permission String // READ, WRITE, ADMIN
+  
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, userId])
+}
+
+model Part {
+  id             String  @id @default(cuid())
+  userId         String
+  name           String
+  partNumber     String?
+  manufacturer   String?
+  compatibleType String? // e.g. "Car"
+  defaultCost    Float   @default(0)
+  unitOfMeasure  String  @default("pcs") // pcs, quarts, pkg, etc
+  quantityOnHand Float   @default(0)
+  
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceParts   ServicePart[]
+  purchases      PartPurchase[]
+  compatibilities AssetPartCompatibility[]
+}
+
+model PartPurchase {
+  id          String   @id @default(cuid())
+  partId      String
+  quantity    Float
+  costPerUnit Float
+  date        DateTime @default(now())
+  userId      String
+  
+  part        Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+}
+
+model AssetPartCompatibility {
+  id      String @id @default(cuid())
+  assetId String
+  partId  String
+  
+  asset   Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  part    Part  @relation(fields: [partId], references: [id], onDelete: Cascade)
+  
+  @@unique([assetId, partId])
+}
+
+model ServiceRecord {
+  id             String   @id @default(cuid())
+  assetId        String
+  date           DateTime
+  usageAtService Float    // Mileage/Hours
+  summary        String
+  notes          String?
+  totalCost      Float    @default(0)
+  vendor         String?
+  
+  asset          Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  parts          ServicePart[]
+  attachments    Attachment[]
+}
+
+model ServicePart {
+  id              String        @id @default(cuid())
+  serviceRecordId String
+  partId          String
+  quantity        Float
+  costPerUnit     Float
+  
+  serviceRecord   ServiceRecord @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  part            Part          @relation(fields: [partId], references: [id])
+}
+
+model FuelRecord {
+  id            String   @id @default(cuid())
+  assetId       String
+  date          DateTime
+  usageAtFill   Float
+  gallons       Float
+  pricePerGallon Float
+  totalCost     Float
+  isFullTank    Boolean  @default(true)
+  
+  asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  attachments   Attachment[]
+}
+
+model ServiceSchedule {
+  id             String   @id @default(cuid())
+  assetId        String
+  name           String
+  frequencyType  String   // Date, Mileage, Hours
+  frequencyValue Float    // e.g. 3000 or 365
+  
+  lastPerformedDate DateTime?
+  lastPerformedUsage Float?
+  
+  nextDueDate    DateTime?
+  nextDueUsage   Float?
+  
+  asset          Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id             String   @id @default(cuid())
+  url            String
+  fileType       String
+  
+  // Polymorphic-like associations (optional relations)
+  serviceRecordId String?
+  fuelRecordId    String?
+  partPurchaseId  String?
+  
+  serviceRecord   ServiceRecord? @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  fuelRecord      FuelRecord?    @relation(fields: [fuelRecordId], references: [id], onDelete: Cascade)
+  partPurchase    PartPurchase?  @relation(fields: [partPurchaseId], references: [id], onDelete: Cascade)
+}
