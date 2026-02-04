@@ -27,7 +27,6 @@ export async function createPart(data: z.infer<typeof PartSchema>) {
 
     const { assetIds, ...partData } = data;
 
-    // @ts-ignore
     const part = await prisma.part.create({
         data: {
             ...partData,

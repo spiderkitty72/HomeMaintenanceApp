@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
-import { createAsset } from "@/lib/actions/assets";
+import { createAsset, updateAsset } from "@/lib/actions/assets";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/common/ImageUpload";
+import { Asset } from "@prisma/client";
 
 const formSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -21,43 +22,70 @@ const formSchema = z.object({
     trackingMethod: z.string(),
     currentUsage: z.coerce.number().min(0),
     image: z.string().optional(),
+    details: z.record(z.string(), z.any()).default({}),
 });
 
-export function AddAssetDialog() {
+type FormValues = z.infer<typeof formSchema>;
+
+interface AddAssetDialogProps {
+    asset?: Asset;
+    trigger?: React.ReactNode;
+}
+
+export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const [open, setOpen] = useState(false);
-    const form = useForm<z.infer<typeof formSchema>>({
+
+    const initialDetails = asset?.details ? JSON.parse(asset.details) : {};
+
+    const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: "",
-            type: ASSET_TYPES.CAR,
-            trackingMethod: TRACKING_METHODS.MILEAGE,
-            currentUsage: 0,
+        values: {
+            name: asset?.name || "",
+            type: asset?.type || ASSET_TYPES.CAR,
+            trackingMethod: asset?.trackingMethod || TRACKING_METHODS.MILEAGE,
+            currentUsage: asset?.currentUsage || 0,
+            image: asset?.image || "",
+            details: initialDetails,
         },
     });
 
+    const isEditing = !!asset;
+
     const assetType = form.watch("type");
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: FormValues) {
         try {
-            await createAsset(values);
-            toast.success("Asset created successfully");
+            const dataToSubmit = {
+                ...values,
+                details: JSON.stringify(values.details),
+            };
+
+            if (isEditing && asset) {
+                await updateAsset(asset.id, dataToSubmit as any);
+                toast.success("Asset updated successfully");
+            } else {
+                await createAsset(dataToSubmit as any);
+                toast.success("Asset created successfully");
+            }
             setOpen(false);
-            form.reset();
+            if (!isEditing) form.reset();
         } catch (error: any) {
-            toast.error(error.message || "Failed to create asset");
+            toast.error(error.message || `Failed to ${isEditing ? "update" : "create"} asset`);
         }
     }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" /> Add Asset
-                </Button>
+                {trigger || (
+                    <Button size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" /> Add Asset
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New Asset</DialogTitle>
+                    <DialogTitle>{isEditing ? "Edit Asset" : "Add New Asset"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -148,25 +176,115 @@ export function AddAssetDialog() {
                             </p>
                             {assetType === ASSET_TYPES.CAR && (
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Input placeholder="Make" />
-                                    <Input placeholder="Model" />
-                                    <Input placeholder="Year" type="number" />
-                                    <Input placeholder="VIN" />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.make"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Make" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.model"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Model" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.year"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Year" type="number" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.vin"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="VIN" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             )}
                             {assetType === ASSET_TYPES.HOUSE && (
                                 <div className="space-y-4">
-                                    <Input placeholder="Address" />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.address"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Address" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input placeholder="Year Built" type="number" />
-                                        <Input placeholder="Sq Ft" type="number" />
+                                        <FormField
+                                            control={form.control}
+                                            name="details.yearBuilt"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input placeholder="Year Built" type="number" {...field} value={field.value ?? ""} />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="details.sqFt"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input placeholder="Sq Ft" type="number" {...field} value={field.value ?? ""} />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
                                 </div>
                             )}
                             {assetType === ASSET_TYPES.UTILITY && (
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Input placeholder="Manufacturer" />
-                                    <Input placeholder="Serial Number" />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.manufacturer"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Manufacturer" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.serialNumber"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Serial Number" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -185,7 +303,7 @@ export function AddAssetDialog() {
                             )}
                         />
                         <Button type="submit" className="w-full">
-                            Create Asset
+                            {isEditing ? "Save Changes" : "Create Asset"}
                         </Button>
                     </form>
                 </Form>

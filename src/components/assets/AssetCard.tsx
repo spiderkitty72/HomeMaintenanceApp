@@ -2,12 +2,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ASSET_TYPES, ASSET_TYPES as AssetTypes, TRACKING_METHODS } from "@/lib/constants";
+import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
 import { Asset } from "@prisma/client";
-import { Car, Home, Wrench, MoreVertical } from "lucide-react";
+import { Car, Home, Wrench, MoreVertical, Fuel as FuelIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
+import { AddFuelDialog } from "@/components/fuel/AddFuelDialog";
+import { AddServiceDialog } from "@/components/service/AddServiceDialog";
+import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
+import Image from "next/image";
 import Link from "next/link";
 
 interface AssetCardProps {
@@ -19,58 +22,125 @@ export function AssetCard({ asset, onDelete }: AssetCardProps) {
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
 
     return (
-        <div className="relative group">
-            <Link href={`/dashboard/asset/${asset.id}`} className="block">
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-primary/10 rounded-full">
-                                <Icon className="h-4 w-4 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-sm font-medium">{asset.name}</CardTitle>
-                                <CardDescription className="text-xs">{asset.type}</CardDescription>
-                            </div>
-                        </div>
-                        {/* Empty div to preserve flex layout since dropdown is absolute below */}
-                        <div className="h-8 w-8" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex justify-between items-end mt-4">
-                            <div className="space-y-1">
-                                <p className="text-2xl font-bold">
-                                    {asset.currentUsage.toLocaleString()}
-                                    <span className="text-xs font-normal text-muted-foreground ml-1">
-                                        {asset.trackingMethod === TRACKING_METHODS.MILEAGE ? "mi" : asset.trackingMethod === TRACKING_METHODS.HOURS ? "hrs" : ""}
-                                    </span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">Current Usage</p>
-                            </div>
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                                {asset.trackingMethod}
-                            </Badge>
-                        </div>
-                    </CardContent>
-                </Card>
-            </Link>
+        <div className="relative group overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all h-[240px]">
+            {/* Background Image with Fade */}
+            {asset.image ? (
+                <div className="absolute inset-0 z-0">
+                    <Image
+                        src={asset.image}
+                        alt={asset.name}
+                        fill
+                        className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+                </div>
+            ) : (
+                <div className="absolute inset-0 z-0 bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
+                </div>
+            )}
 
-            <div className="absolute top-2 right-2 z-10">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/asset/${asset.id}`}>View Details</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(asset.id)}>
-                            Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            {/* Navigation Link (z-10) - Covers the whole card */}
+            <Link
+                href={`/dashboard/asset/${asset.id}`}
+                className="absolute inset-0 z-10"
+                aria-label={`View ${asset.name} details`}
+            />
+
+            {/* Content Layer (z-20) - Pass-through clicks to Link, except for specific interactive elements */}
+            <div className="relative z-20 flex flex-col h-full p-4 pointer-events-none">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
+                            <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold leading-none tracking-tight text-lg drop-shadow-sm">{asset.name}</h3>
+                            <p className="text-xs text-muted-foreground font-medium uppercase mt-1 tracking-wider">{asset.type}</p>
+                        </div>
+                    </div>
+
+                    <div className="pointer-events-auto">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/dashboard/asset/${asset.id}`}>View Details</Link>
+                                </DropdownMenuItem>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <AddAssetDialog
+                                        asset={asset}
+                                        trigger={
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                                        }
+                                    />
+                                </div>
+                                <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete?.(asset.id);
+                                    }}
+                                >
+                                    Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                <div className="mt-auto flex justify-between items-end pb-4">
+                    <div className="space-y-1 text-foreground">
+                        <p className="text-3xl font-bold tracking-tight">
+                            {asset.currentUsage.toLocaleString()}
+                            <span className="text-xs font-normal opacity-70 ml-1 uppercase">
+                                {asset.trackingMethod === TRACKING_METHODS.MILEAGE ? "mi" : asset.trackingMethod === TRACKING_METHODS.HOURS ? "hrs" : ""}
+                            </span>
+                        </p>
+                        <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest">Current Usage</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-2 pointer-events-auto">
+                    {asset.type === ASSET_TYPES.CAR && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <AddFuelDialog
+                                assetId={asset.id}
+                                trackingMethod={asset.trackingMethod}
+                                trigger={
+                                    <Button variant="secondary" size="sm" className="w-full h-9 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-none shadow-none text-xs gap-1.5 font-semibold">
+                                        <FuelIcon className="h-3.5 w-3.5" />
+                                        Fuel
+                                    </Button>
+                                }
+                            />
+                        </div>
+                    )}
+                    <div
+                        className={asset.type !== ASSET_TYPES.CAR ? "col-span-2" : ""}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <AddServiceDialog
+                            assetId={asset.id}
+                            trackingMethod={asset.trackingMethod}
+                            trigger={
+                                <Button variant="secondary" size="sm" className="w-full h-9 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-none shadow-none text-xs gap-1.5 font-semibold">
+                                    <Plus className="h-3.5 w-3.5" />
+                                    Service
+                                </Button>
+                            }
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );

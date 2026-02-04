@@ -55,6 +55,7 @@ model User {
   parts         Part[]
   groups        GroupMember[]
   partPurchases PartPurchase[]
+  assetSpecTypes AssetSpecType[]
 }
 
 model VerificationToken {
@@ -120,6 +121,31 @@ model Asset {
   fuelRecords    FuelRecord[]
   schedules      ServiceSchedule[]
   compatibilities AssetPartCompatibility[]
+  specs          AssetSpec[]
+}
+
+model AssetSpecType {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  unit      String?  // e.g. PSI, Quarts, Ft-lbs
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specs     AssetSpec[]
+
+  @@unique([userId, name])
+}
+
+model AssetSpec {
+  id         String   @id @default(cuid())
+  assetId    String
+  specTypeId String
+  value      Float
+  
+  asset      Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  specType   AssetSpecType @relation(fields: [specTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, specTypeId])
 }
 
 model AssetShare {
@@ -147,21 +173,31 @@ model Part {
   
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   serviceParts   ServicePart[]
-  purchases      PartPurchase[]
+  purchases      PartPurchaseItem[]
   compatibilities AssetPartCompatibility[]
 }
 
 model PartPurchase {
   id          String   @id @default(cuid())
-  partId      String
-  quantity    Float
-  costPerUnit Float
   date        DateTime @default(now())
   userId      String
+  vendor      String?
+  totalCost   Float    @default(0)
   
-  part        Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PartPurchaseItem[]
   attachments Attachment[]
+}
+
+model PartPurchaseItem {
+  id              String   @id @default(cuid())
+  partPurchaseId  String
+  partId          String
+  quantity        Float
+  costPerUnit     Float
+  
+  partPurchase    PartPurchase @relation(fields: [partPurchaseId], references: [id], onDelete: Cascade)
+  part            Part         @relation(fields: [partId], references: [id])
 }
 
 model AssetPartCompatibility {

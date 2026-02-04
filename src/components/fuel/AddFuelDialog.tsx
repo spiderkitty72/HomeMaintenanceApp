@@ -43,9 +43,10 @@ interface AddFuelDialogProps {
     assetId: string;
     trackingMethod: string;
     lastUsage?: number;
+    trigger?: React.ReactNode;
 }
 
-export function AddFuelDialog({ assetId, trackingMethod, lastUsage }: AddFuelDialogProps) {
+export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger }: AddFuelDialogProps) {
     const [open, setOpen] = useState(false);
 
     const form = useForm<FuelFormValues>({
@@ -78,10 +79,12 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage }: AddFuelDia
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                    <Fuel className="h-4 w-4" />
-                    <span className="hidden sm:inline">Log Fuel</span>
-                </Button>
+                {trigger || (
+                    <Button size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline text-xs font-semibold">Log Fuel</span>
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>

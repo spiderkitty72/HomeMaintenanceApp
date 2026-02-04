@@ -36,11 +36,12 @@ type ServiceFormValues = z.infer<typeof serviceSchema>;
 interface AddServiceDialogProps {
     assetId: string;
     trackingMethod: string;
+    trigger?: React.ReactNode;
 }
 
-export function AddServiceDialog({ assetId, trackingMethod }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, trigger }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
-    const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number }[]>([]);
+    const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
 
     const form = useForm<ServiceFormValues>({
         resolver: zodResolver(serviceSchema) as any,
@@ -104,10 +105,12 @@ export function AddServiceDialog({ assetId, trackingMethod }: AddServiceDialogPr
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm">
-                    <Plus className="sm:mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Add Service</span>
-                </Button>
+                {trigger || (
+                    <Button size="sm">
+                        <Plus className="sm:mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline text-xs font-semibold">Add Service</span>
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -219,7 +222,9 @@ export function AddServiceDialog({ assetId, trackingMethod }: AddServiceDialogPr
                                                         </FormControl>
                                                         <SelectContent>
                                                             {availableParts.map((p) => (
-                                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                <SelectItem key={p.id} value={p.id}>
+                                                                    {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
+                                                                </SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>

@@ -85,3 +85,35 @@ export async function deleteAsset(id: string) {
 
     revalidatePath("/dashboard");
 }
+
+export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    await ensurePermission("EDIT", "ASSET");
+
+    // Ensure user owns or handles the asset
+    const existingAsset = await prisma.asset.findUnique({
+        where: { id },
+    });
+
+    if (!existingAsset || existingAsset.userId !== session.user.id) {
+        throw new Error("Unauthorized to update this asset");
+    }
+
+    try {
+        const asset = await prisma.asset.update({
+            where: { id },
+            data,
+        });
+
+        revalidatePath("/dashboard");
+        revalidatePath(`/dashboard/asset/${id}`);
+        return asset;
+    } catch (error) {
+        console.error("UPDATE_ASSET_ERROR:", error);
+        throw error;
+    }
+}

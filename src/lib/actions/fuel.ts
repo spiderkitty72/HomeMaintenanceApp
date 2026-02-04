@@ -75,9 +75,10 @@ export async function getFuelRecords(assetId: string) {
     return await prisma.fuelRecord.findMany({
         where: { assetId },
         include: { attachments: true },
-        orderBy: {
-            date: "desc",
-        },
+        orderBy: [
+            { date: "desc" },
+            { usageAtFill: "desc" }
+        ],
     });
 }
 
@@ -89,9 +90,10 @@ export async function getFuelStats(assetId: string) {
 
     const records = await prisma.fuelRecord.findMany({
         where: { assetId },
-        orderBy: {
-            date: "desc",
-        },
+        orderBy: [
+            { date: "desc" },
+            { usageAtFill: "desc" }
+        ],
         take: 10,
     });
 
@@ -107,7 +109,7 @@ export async function getFuelStats(assetId: string) {
     const distance = newest.usageAtFill - oldest.usageAtFill;
     const totalGallons = records.slice(0, -1).reduce((acc, r) => acc + r.gallons, 0);
 
-    if (totalGallons === 0) return null;
+    if (totalGallons <= 0 || distance <= 0) return null;
 
     const avgMpg = distance / totalGallons;
     const avgCostPerGal = records.reduce((acc, r) => acc + r.pricePerGallon, 0) / records.length;

@@ -18,7 +18,9 @@ import { ScheduleList } from "@/components/schedules/ScheduleList";
 import { AddScheduleDialog } from "@/components/schedules/AddScheduleDialog";
 import { isBefore } from "date-fns";
 import { getCompatibleParts } from "@/lib/actions/parts";
-import { Package } from "lucide-react";
+import { Package, ListChecks } from "lucide-react";
+import { getAssetSpecs } from "@/lib/actions/specs";
+import { SpecList } from "@/components/assets/SpecList";
 
 export default async function AssetDetailPage({ params }: { params: { id: string } }) {
     const { id } = await params;
@@ -44,6 +46,7 @@ export default async function AssetDetailPage({ params }: { params: { id: string
     const fuelStats = await getFuelStats(id);
     const schedules = await getSchedules(id);
     const compatibleParts = await getCompatibleParts(id);
+    const specs = await getAssetSpecs(id);
 
     // Find the most urgent reminder
     const urgentSchedule = schedules.find(s => {
@@ -156,7 +159,7 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                         </CardContent>
                     </Card>
 
-                    {/* Dynamic Details from JSON if needed */}
+                    {/* Dynamic Details from JSON */}
                     {asset.details && (
                         <Card>
                             <CardHeader>
@@ -164,9 +167,16 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                                     Specifications
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-sm italic text-muted-foreground text-center">
-                                    Detailed specs placeholder
+                            <CardContent className="pt-0">
+                                <div className="space-y-3">
+                                    {Object.entries(JSON.parse(asset.details)).map(([key, value]) => (
+                                        <div key={key} className="flex flex-col border-b border-muted last:border-0 pb-2 last:pb-0">
+                                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
+                                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                                            </span>
+                                            <span className="text-sm font-medium">{value as string}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </CardContent>
                         </Card>
@@ -186,6 +196,9 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                             <TabsTrigger value="schedules" className="flex items-center">
                                 <Bell className="h-4 w-4 mr-2" /> Reminders
                             </TabsTrigger>
+                            <TabsTrigger value="specs" className="flex items-center">
+                                <ListChecks className="h-4 w-4 mr-2" /> Specs
+                            </TabsTrigger>
                             <TabsTrigger value="parts" className="flex items-center">
                                 <Package className="h-4 w-4 mr-2" /> Parts
                             </TabsTrigger>
@@ -203,6 +216,9 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                                 trackingMethod={asset.trackingMethod}
                                 currentUsage={asset.currentUsage}
                             />
+                        </TabsContent>
+                        <TabsContent value="specs">
+                            <SpecList assetId={asset.id} specs={specs} />
                         </TabsContent>
                         <TabsContent value="parts">
                             <Card>

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, Users, Lock, UserPlus, FolderPlus, PackageSearch } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { AddGroupDialog } from "@/components/admin/AddGroupDialog";
+import { ExportDataButton } from "@/components/admin/ExportDataButton";
 
 export default async function AdminDashboardPage() {
     const session = await auth();
@@ -32,6 +33,7 @@ export default async function AdminDashboardPage() {
                     <p className="text-muted-foreground mt-1">Manage users, groups, and system permissions.</p>
                 </div>
                 <div className="flex gap-2">
+                    <ExportDataButton />
                     <AddUserDialog />
                     <AddGroupDialog />
                 </div>
