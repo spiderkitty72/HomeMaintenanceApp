@@ -33,6 +33,7 @@ import { Plus, Edit2 } from "lucide-react";
 import { createPart, updatePart } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { ASSET_TYPES } from "@/lib/constants";
+import { ImageUpload } from "@/components/common/ImageUpload";
 
 const partSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -43,6 +44,7 @@ const partSchema = z.object({
     defaultCost: z.coerce.number().min(0).default(0),
     unitOfMeasure: z.string().min(1, "Unit of measure is required").default("pcs"),
     quantityOnHand: z.coerce.number().default(0),
+    image: z.string().optional(),
 });
 
 type PartFormValues = z.infer<typeof partSchema>;
@@ -67,6 +69,7 @@ export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps
             defaultCost: part?.defaultCost || 0,
             unitOfMeasure: part?.unitOfMeasure || "pcs",
             quantityOnHand: part?.quantityOnHand || 0,
+            image: part?.image || "",
         },
     });
 
@@ -110,6 +113,21 @@ export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="image"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <ImageUpload
+                                            onUpload={field.onChange}
+                                            value={field.value}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="name"

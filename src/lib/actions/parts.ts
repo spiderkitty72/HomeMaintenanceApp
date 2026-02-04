@@ -15,6 +15,7 @@ const PartSchema = z.object({
     defaultCost: z.coerce.number().min(0).default(0),
     unitOfMeasure: z.string().min(1, "Unit of measure is required").default("pcs"),
     quantityOnHand: z.coerce.number().default(0),
+    image: z.string().optional(),
 });
 
 export async function createPart(data: z.infer<typeof PartSchema>) {
@@ -55,6 +56,7 @@ export async function getParts() {
     return await prisma.part.findMany({
         where: {
             userId: session.user.id,
+            isActive: true,
         },
         include: {
             compatibilities: {
@@ -109,6 +111,41 @@ export async function deletePart(id: string) {
     });
 
     revalidatePath("/dashboard/parts");
+}
+
+export async function getAllPartsSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.part.findMany({
+        include: {
+            compatibilities: {
+                include: {
+                    asset: true,
+                },
+            },
+        },
+        orderBy: {
+            name: "asc",
+        },
+    });
+}
+
+export async function togglePartStatus(id: string, isActive: boolean) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    await prisma.part.update({
+        where: { id },
+        data: { isActive },
+    });
+
+    revalidatePath("/dashboard/parts");
+    revalidatePath("/dashboard/admin");
 }
 
 export async function assignPartToAsset(partId: string, assetId: string) {
@@ -169,6 +206,7 @@ export async function getCompatibleParts(assetId: string) {
     return await prisma.part.findMany({
         where: {
             userId: session.user.id,
+            isActive: true,
             OR: [
                 {
                     compatibilities: {

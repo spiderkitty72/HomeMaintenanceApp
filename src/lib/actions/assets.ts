@@ -62,6 +62,19 @@ export async function getAssets() {
     });
 }
 
+export async function getAllAssetsSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.asset.findMany({
+        orderBy: {
+            name: "asc",
+        },
+    });
+}
+
 export async function deleteAsset(id: string) {
     const session = await auth();
     if (!session?.user?.id) {

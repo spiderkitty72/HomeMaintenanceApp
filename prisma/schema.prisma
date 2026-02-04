@@ -170,6 +170,8 @@ model Part {
   defaultCost    Float   @default(0)
   unitOfMeasure  String  @default("pcs") // pcs, quarts, pkg, etc
   quantityOnHand Float   @default(0)
+  isActive       Boolean @default(true)
+  image          String?
   
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   serviceParts   ServicePart[]

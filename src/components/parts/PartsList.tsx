@@ -51,8 +51,14 @@ export function PartsList({ parts, assets }: PartsListProps) {
                     {parts.map((part) => (
                         <TableRow key={part.id}>
                             <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0 border">
+                                        {part.image ? (
+                                            <img src={part.image} alt={part.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <Package className="h-5 w-5 text-muted-foreground" />
+                                        )}
+                                    </div>
                                     {part.name}
                                 </div>
                             </TableCell>

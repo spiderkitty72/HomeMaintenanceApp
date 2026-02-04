@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getUsers } from "@/lib/actions/users";
 import { getGroups } from "@/lib/actions/groups";
-import { getParts } from "@/lib/actions/parts";
+import { getAllPartsSystem } from "@/lib/actions/parts";
+import { getAllAssetsSystem } from "@/lib/actions/assets";
 import { UserList } from "@/components/admin/UserList";
 import { GroupList } from "@/components/admin/GroupList";
 import { AdminInventory } from "@/components/admin/AdminInventory";
@@ -19,10 +20,11 @@ export default async function AdminDashboardPage() {
         redirect("/dashboard");
     }
 
-    const [users, groups, parts] = await Promise.all([
+    const [users, groups, parts, assets] = await Promise.all([
         getUsers(),
         getGroups(),
-        getParts(),
+        getAllPartsSystem(),
+        getAllAssetsSystem(),
     ]);
 
     return (
@@ -89,7 +91,7 @@ export default async function AdminDashboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AdminInventory parts={parts} />
+                            <AdminInventory parts={parts} allAssets={assets} />
                         </CardContent>
                     </Card>
                 </TabsContent>
