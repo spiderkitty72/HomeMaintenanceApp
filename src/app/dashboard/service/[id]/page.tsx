@@ -16,14 +16,29 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AddServiceDialog } from "@/components/service/AddServiceDialog";
+import { DeleteRecordButton } from "@/components/common/DeleteRecordButton";
+import { deleteServiceRecord } from "@/lib/actions/service";
+import { auth } from "@/auth";
+import { checkPermission } from "@/lib/permissions";
+import { Edit2 } from "lucide-react";
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const session = await auth();
     const { id } = await params;
     const record = await getServiceRecord(id);
 
-    if (!record) {
+    if (!record || !session?.user?.id) {
         notFound();
     }
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = record.asset.userId === session.user.id;
+    const hasEditPermission = await checkPermission("EDIT", "SERVICE");
+    const hasDeletePermission = await checkPermission("DELETE", "SERVICE");
+
+    const canEdit = isAdmin || isOwner || hasEditPermission;
+    const canDelete = isAdmin || isOwner || hasDeletePermission;
 
     const usageUnit = record.asset.trackingMethod === "Mileage" ? "mi" : record.asset.trackingMethod === "Hours" ? "hrs" : "";
 
@@ -50,6 +65,31 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                         <Wrench className="h-3.5 w-3.5 mr-1.5" />
                         Service Record
                     </Badge>
+                    {(canEdit || canDelete) && (
+                        <div className="flex items-center gap-2 ml-2 border-l pl-4 py-1">
+                            {canEdit && (
+                                <AddServiceDialog
+                                    assetId={record.assetId}
+                                    trackingMethod={record.asset.trackingMethod}
+                                    serviceRecord={record}
+                                    trigger={
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Edit2 className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    }
+                                />
+                            )}
+                            {canDelete && (
+                                <DeleteRecordButton
+                                    recordId={record.id}
+                                    onDelete={deleteServiceRecord}
+                                    redirectPath={`/dashboard/asset/${record.assetId}`}
+                                    recordType="Service"
+                                />
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

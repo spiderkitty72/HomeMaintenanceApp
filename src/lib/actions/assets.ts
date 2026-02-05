@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AssetType, TrackingMethod } from "@/lib/constants";
-import { ensurePermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission } from "@/lib/permissions";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -138,7 +138,10 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     });
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    if (!existingAsset || (!isAdmin && existingAsset.userId !== session.user.id)) {
+    const isOwner = existingAsset?.userId === session.user.id;
+    const hasPermission = await checkPermission("EDIT", "ASSET");
+
+    if (!existingAsset || (!isOwner && !isAdmin && !hasPermission)) {
         throw new Error("Unauthorized to update this asset");
     }
 

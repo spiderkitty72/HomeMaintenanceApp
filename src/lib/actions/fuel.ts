@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshPredictions } from "./schedules";
-import { ensurePermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission } from "@/lib/permissions";
 
 const FuelRecordSchema = z.object({
     assetId: z.string(),
@@ -177,7 +177,10 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
     if (!existing) throw new Error("Record not found");
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    if (!isAdmin && existing.asset.userId !== session.user.id) {
+    const isOwner = existing.asset.userId === session.user.id;
+    const hasPermission = await checkPermission("EDIT", "FUEL");
+
+    if (!isAdmin && !isOwner && !hasPermission) {
         throw new Error("Unauthorized to update this record");
     }
 
@@ -247,7 +250,10 @@ export async function deleteFuelRecord(id: string) {
     if (!existing) throw new Error("Record not found");
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    if (!isAdmin && existing.asset.userId !== session.user.id) {
+    const isOwner = existing.asset.userId === session.user.id;
+    const hasPermission = await checkPermission("DELETE", "FUEL");
+
+    if (!isAdmin && !isOwner && !hasPermission) {
         throw new Error("Unauthorized to delete this record");
     }
 

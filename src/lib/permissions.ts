@@ -17,11 +17,6 @@ export async function checkPermission(action: PermissionAction, resource: Permis
     // ADMIN role bypasses everything
     if (user.role === "ADMIN") return true;
 
-    // Baseline: Any logged in user can manage their own standard resources
-    // The individual server actions will enforce ownership/privacy
-    const baselineResources = ["ASSET", "SERVICE", "FUEL", "PART"];
-    if (baselineResources.includes(resource)) return true;
-
     // Find all permissions for the user's groups
     const permissions = await prisma.permission.findFirst({
         where: {

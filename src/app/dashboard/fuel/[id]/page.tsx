@@ -17,14 +17,29 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AddFuelDialog } from "@/components/fuel/AddFuelDialog";
+import { DeleteRecordButton } from "@/components/common/DeleteRecordButton";
+import { deleteFuelRecord } from "@/lib/actions/fuel";
+import { auth } from "@/auth";
+import { checkPermission } from "@/lib/permissions";
+import { Edit2 } from "lucide-react";
 
 export default async function FuelDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const session = await auth();
     const { id } = await params;
     const record = await getFuelRecord(id);
 
-    if (!record) {
+    if (!record || !session?.user?.id) {
         notFound();
     }
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = record.asset.userId === session.user.id;
+    const hasEditPermission = await checkPermission("EDIT", "FUEL");
+    const hasDeletePermission = await checkPermission("DELETE", "FUEL");
+
+    const canEdit = isAdmin || isOwner || hasEditPermission;
+    const canDelete = isAdmin || isOwner || hasDeletePermission;
 
     // Get all records for this asset to calculate MPG for this specific record
     // In a real app we might pass this calculation or the previous record id
@@ -70,6 +85,31 @@ export default async function FuelDetailPage({ params }: { params: Promise<{ id:
                             <CircleDashed className="h-3.5 w-3.5 mr-1.5" />
                             Partial Fill
                         </Badge>
+                    )}
+                    {(canEdit || canDelete) && (
+                        <div className="flex items-center gap-2 ml-2 border-l pl-4 py-1">
+                            {canEdit && (
+                                <AddFuelDialog
+                                    assetId={record.assetId}
+                                    trackingMethod={record.asset.trackingMethod}
+                                    fuelRecord={record}
+                                    trigger={
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Edit2 className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    }
+                                />
+                            )}
+                            {canDelete && (
+                                <DeleteRecordButton
+                                    recordId={record.id}
+                                    onDelete={deleteFuelRecord}
+                                    redirectPath={`/dashboard/asset/${record.assetId}`}
+                                    recordType="Fuel"
+                                />
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
