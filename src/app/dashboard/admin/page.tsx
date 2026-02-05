@@ -12,9 +12,10 @@ import { AdminInventory } from "@/components/admin/AdminInventory";
 import { AdminAssetList } from "@/components/admin/AdminAssetList";
 import { AdminFuelList } from "@/components/admin/AdminFuelList";
 import { AdminServiceList } from "@/components/admin/AdminServiceList";
+import { AdminSystemTab } from "@/components/admin/AdminSystemTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, PackageSearch, Car, Fuel, Wrench } from "lucide-react";
+import { Shield, Users, PackageSearch, Car, Fuel, Wrench, Settings } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { AddGroupDialog } from "@/components/admin/AddGroupDialog";
 import { ExportDataButton } from "@/components/admin/ExportDataButton";
@@ -67,6 +68,9 @@ export default async function AdminDashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="service" className="gap-2 flex-1 min-w-[100px]">
                         <Wrench className="h-4 w-4" /> Services
+                    </TabsTrigger>
+                    <TabsTrigger value="system" className="gap-2 flex-1 min-w-[100px]">
+                        <Settings className="h-4 w-4" /> System
                     </TabsTrigger>
                 </TabsList>
 
@@ -152,6 +156,10 @@ export default async function AdminDashboardPage() {
                             <AdminServiceList records={serviceRecords} />
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="system" className="space-y-4">
+                    <AdminSystemTab />
                 </TabsContent>
             </Tabs>
         </div>
