@@ -40,65 +40,81 @@ export async function Navbar() {
                     <span className="font-bold text-xl tracking-tight">MaintenanceApp</span>
                 </Link>
 
-                <div className="flex items-center space-x-4">
-                    {session ? (
-                        <>
-                            {/* Desktop Navigation */}
-                            <div className="hidden md:flex items-center space-x-6">
-                                <NavItems />
-                                <form
-                                    action={async () => {
-                                        "use server";
-                                        await signOut();
-                                    }}
-                                >
-                                    <Button variant="ghost" size="sm" className="hidden md:flex">
-                                        Sign Out
-                                    </Button>
-                                </form>
-                            </div>
+                <div className="flex items-center space-x-1 sm:space-x-4">
+                    {/* Desktop Navigation (Session Required) */}
+                    {session && (
+                        <div className="hidden md:flex items-center space-x-6">
+                            <NavItems />
+                            <form
+                                action={async () => {
+                                    "use server";
+                                    await signOut();
+                                }}
+                            >
+                                <Button variant="ghost" size="sm">
+                                    Sign Out
+                                </Button>
+                            </form>
+                        </div>
+                    )}
 
-                            {/* Mobile Navigation */}
-                            <div className="md:hidden">
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="md:hidden">
-                                            <Menu className="h-6 w-6" />
-                                            <span className="sr-only">Toggle navigation menu</span>
-                                        </Button>
-                                    </SheetTrigger>
-                                    <SheetContent side="right" className="w-[280px] sm:w-[350px]">
-                                        <SheetHeader className="text-left border-b pb-4 mb-4">
-                                            <SheetTitle className="flex items-center space-x-2">
-                                                <Wrench className="h-5 w-5 text-primary" />
-                                                <span>MaintenanceApp</span>
-                                            </SheetTitle>
-                                        </SheetHeader>
-                                        <div className="flex flex-col space-y-4">
+                    {!session && (
+                        <div className="hidden md:block">
+                            <Link href="/api/auth/signin">
+                                <Button size="sm">Sign In</Button>
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Mobile Navigation (Always Visible) */}
+                    <div className="md:hidden">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="hover:bg-accent/50 active:scale-95 transition-all">
+                                    <Menu className="h-6 w-6" />
+                                    <span className="sr-only">Toggle navigation menu</span>
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="right" className="w-[85vw] max-w-[350px] p-6">
+                                <SheetHeader className="text-left border-b pb-4 mb-6">
+                                    <SheetTitle className="flex items-center space-x-2 text-xl font-bold">
+                                        <Wrench className="h-5 w-5 text-primary" />
+                                        <span>MaintenanceApp</span>
+                                    </SheetTitle>
+                                </SheetHeader>
+                                <div className="flex flex-col space-y-6">
+                                    {session ? (
+                                        <>
                                             <NavItems />
-                                            <div className="pt-4 border-t">
+                                            <div className="pt-6 border-t mt-auto">
                                                 <form
                                                     action={async () => {
                                                         "use server";
                                                         await signOut();
                                                     }}
                                                 >
-                                                    <Button variant="outline" size="sm" className="w-full justify-start space-x-2">
-                                                        <LogOut className="h-4 w-4" />
-                                                        <span>Sign Out</span>
+                                                    <Button variant="outline" size="lg" className="w-full justify-start space-x-3 text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                                        <LogOut className="h-5 w-5" />
+                                                        <span className="font-semibold">Sign Out</span>
                                                     </Button>
                                                 </form>
                                             </div>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-muted-foreground">Sign in to manage your assets and service records.</p>
+                                            <Link href="/api/auth/signin" className="block">
+                                                <Button size="lg" className="w-full justify-start space-x-3">
+                                                    <LogOut className="h-5 w-5 rotate-180" />
+                                                    <span>Sign In</span>
+                                                </Button>
+                                            </Link>
                                         </div>
-                                    </SheetContent>
-                                </Sheet>
-                            </div>
-                        </>
-                    ) : (
-                        <Link href="/api/auth/signin">
-                            <Button size="sm">Sign In</Button>
-                        </Link>
-                    )}
+                                    )}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                 </div>
             </div>
         </nav>

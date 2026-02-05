@@ -19,6 +19,13 @@ export const metadata: Metadata = {
   description: "Track your assets and maintenance schedules",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
