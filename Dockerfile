@@ -1,11 +1,15 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+# Required for Prisma to run on Alpine
+RUN apk add --no-cache libc6-compat openssl
+
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install
+# npm ci is faster and more reliable than npm install
+RUN npm ci
 
 # Copy source and prisma
 COPY . .
@@ -16,11 +20,11 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
-# Install openssl for Prisma
-RUN apk add --update --no-cache openssl
-
 # Stage 2: Runner
 FROM node:20-alpine AS runner
+
+# Required in runner for Prisma engines
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
