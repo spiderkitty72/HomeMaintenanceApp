@@ -105,12 +105,14 @@ export async function deleteAsset(id: string) {
 
     await ensurePermission("DELETE", "ASSET");
 
-    // Ensure user owns the asset
     const asset = await prisma.asset.findUnique({
         where: { id },
     });
 
-    if (!asset || asset.userId !== session.user.id) {
+    if (!asset) throw new Error("Asset not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!isAdmin && asset.userId !== session.user.id) {
         throw new Error("Unauthorized to delete this asset");
     }
 
@@ -119,6 +121,7 @@ export async function deleteAsset(id: string) {
     });
 
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/admin");
 }
 
 export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>) {
@@ -134,7 +137,8 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
         where: { id },
     });
 
-    if (!existingAsset || existingAsset.userId !== session.user.id) {
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!existingAsset || (!isAdmin && existingAsset.userId !== session.user.id)) {
         throw new Error("Unauthorized to update this asset");
     }
 

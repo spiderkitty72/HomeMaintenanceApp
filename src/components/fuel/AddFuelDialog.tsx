@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { Fuel, Plus } from "lucide-react";
-import { createFuelRecord } from "@/lib/actions/fuel";
+import { createFuelRecord, updateFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
 
 const fuelSchema = z.object({
@@ -44,20 +44,23 @@ interface AddFuelDialogProps {
     trackingMethod: string;
     lastUsage?: number;
     trigger?: React.ReactNode;
+    fuelRecord?: any; // To handle existing record for editing
 }
 
-export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger }: AddFuelDialogProps) {
+export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fuelRecord }: AddFuelDialogProps) {
     const [open, setOpen] = useState(false);
+    const isEditing = !!fuelRecord;
 
     const form = useForm<FuelFormValues>({
         resolver: zodResolver(fuelSchema) as any,
-        defaultValues: {
-            date: new Date().toISOString().split("T")[0],
-            usageAtFill: lastUsage || 0,
-            gallons: 0,
-            pricePerGallon: 0,
-            totalCost: 0,
-            isFullTank: true,
+        values: {
+            date: fuelRecord ? new Date(fuelRecord.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            usageAtFill: fuelRecord?.usageAtFill ?? (lastUsage || 0),
+            gallons: fuelRecord?.gallons ?? 0,
+            pricePerGallon: fuelRecord?.pricePerGallon ?? 0,
+            totalCost: fuelRecord?.totalCost ?? 0,
+            isFullTank: fuelRecord?.isFullTank ?? true,
+            image: fuelRecord?.attachments?.[0]?.url ?? "",
         },
     });
 
@@ -67,12 +70,17 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger }: A
 
     async function onSubmit(values: FuelFormValues) {
         try {
-            await createFuelRecord({ ...values, assetId });
-            toast.success("Fuel record added");
+            if (isEditing) {
+                await updateFuelRecord(fuelRecord.id, { ...values, assetId });
+                toast.success("Fuel record updated");
+            } else {
+                await createFuelRecord({ ...values, assetId });
+                toast.success("Fuel record added");
+            }
             setOpen(false);
-            form.reset();
+            if (!isEditing) form.reset();
         } catch (error) {
-            toast.error("Failed to add fuel record");
+            toast.error(`Failed to ${isEditing ? "update" : "add"} fuel record`);
         }
     }
 
@@ -81,14 +89,14 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger }: A
             <DialogTrigger asChild>
                 {trigger || (
                     <Button size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
+                        <Fuel className="h-4 w-4" />
                         <span className="hidden sm:inline text-xs font-semibold">Log Fuel</span>
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Log Fuel Usage</DialogTitle>
+                    <DialogTitle>{isEditing ? "Edit Fuel Record" : "Log Fuel Usage"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -221,7 +229,7 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger }: A
                         />
 
                         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? "Logging..." : "Log Fuel"}
+                            {form.formState.isSubmitting ? (isEditing ? "Saving..." : "Logging...") : (isEditing ? "Save Changes" : "Log Fuel")}
                         </Button>
                     </form>
                 </Form>

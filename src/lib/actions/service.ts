@@ -128,3 +128,182 @@ export async function getServiceRecord(id: string) {
     });
 }
 
+export async function getAllServiceRecordsSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.serviceRecord.findMany({
+        include: {
+            asset: {
+                select: {
+                    name: true,
+                    owner: {
+                        select: {
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+            },
+            parts: {
+                include: {
+                    part: true,
+                },
+            },
+            attachments: true,
+        },
+        orderBy: {
+            date: "desc",
+        },
+    });
+}
+
+export async function updateServiceRecord(id: string, data: z.infer<typeof ServiceRecordSchema>) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("EDIT", "SERVICE");
+
+    const existing = await prisma.serviceRecord.findUnique({
+        where: { id },
+        include: { asset: true, parts: true },
+    });
+
+    if (!existing) throw new Error("Record not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!isAdmin && existing.asset.userId !== session.user.id) {
+        throw new Error("Unauthorized to update this record");
+    }
+
+    const { image, parts, ...serviceData } = data;
+
+    const result = await prisma.$transaction(async (tx) => {
+        // 1. Revert current inventory changes
+        for (const p of existing.parts) {
+            await tx.part.update({
+                where: { id: p.partId },
+                data: {
+                    quantityOnHand: {
+                        increment: p.quantity,
+                    },
+                },
+            });
+        }
+
+        // 2. Clear old parts links
+        await tx.servicePart.deleteMany({
+            where: { serviceRecordId: id },
+        });
+
+        // 3. Update service record data
+        const updated = await tx.serviceRecord.update({
+            where: { id },
+            data: {
+                ...serviceData,
+                date: new Date(serviceData.date),
+                parts: {
+                    create: parts.map(p => ({
+                        partId: p.partId,
+                        quantity: p.quantity,
+                        costPerUnit: p.costPerUnit,
+                    })),
+                },
+            },
+        });
+
+        // 4. Apply new inventory changes
+        for (const p of parts) {
+            await tx.part.update({
+                where: { id: p.partId },
+                data: {
+                    quantityOnHand: {
+                        decrement: p.quantity,
+                    },
+                },
+            });
+        }
+
+        if (image !== undefined) {
+            await tx.attachment.deleteMany({
+                where: { serviceRecordId: id },
+            });
+            if (image) {
+                await tx.attachment.create({
+                    data: {
+                        url: image,
+                        fileType: "IMAGE",
+                        serviceRecordId: id,
+                    },
+                });
+            }
+        }
+
+        // Update asset current usage
+        const latestRecord = await tx.serviceRecord.findFirst({
+            where: { assetId: existing.assetId },
+            orderBy: { usageAtService: "desc" },
+        });
+
+        if (latestRecord && latestRecord.usageAtService > existing.asset.currentUsage) {
+            await tx.asset.update({
+                where: { id: existing.assetId },
+                data: { currentUsage: latestRecord.usageAtService },
+            });
+        }
+
+        return updated;
+    });
+
+    revalidatePath(`/dashboard/asset/${existing.assetId}`);
+    revalidatePath(`/dashboard/service/${id}`);
+    revalidatePath("/dashboard/admin");
+    await refreshPredictions(existing.assetId);
+
+    return result;
+}
+
+export async function deleteServiceRecord(id: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("DELETE", "SERVICE");
+
+    const existing = await prisma.serviceRecord.findUnique({
+        where: { id },
+        include: { asset: true, parts: true },
+    });
+
+    if (!existing) throw new Error("Record not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!isAdmin && existing.asset.userId !== session.user.id) {
+        throw new Error("Unauthorized to delete this record");
+    }
+
+    await prisma.$transaction(async (tx) => {
+        // Revert inventory changes
+        for (const p of existing.parts) {
+            await tx.part.update({
+                where: { id: p.partId },
+                data: {
+                    quantityOnHand: {
+                        increment: p.quantity,
+                    },
+                },
+            });
+        }
+
+        // Delete the record (cascade will handle servicePart and attachments)
+        await tx.serviceRecord.delete({
+            where: { id },
+        });
+    });
+
+    revalidatePath(`/dashboard/asset/${existing.assetId}`);
+    revalidatePath("/dashboard/admin");
+    await refreshPredictions(existing.assetId);
+}
+

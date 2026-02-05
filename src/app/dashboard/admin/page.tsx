@@ -4,12 +4,17 @@ import { getUsers } from "@/lib/actions/users";
 import { getGroups } from "@/lib/actions/groups";
 import { getAllPartsSystem } from "@/lib/actions/parts";
 import { getAllAssetsSystem } from "@/lib/actions/assets";
+import { getAllFuelRecordsSystem } from "@/lib/actions/fuel";
+import { getAllServiceRecordsSystem } from "@/lib/actions/service";
 import { UserList } from "@/components/admin/UserList";
 import { GroupList } from "@/components/admin/GroupList";
 import { AdminInventory } from "@/components/admin/AdminInventory";
+import { AdminAssetList } from "@/components/admin/AdminAssetList";
+import { AdminFuelList } from "@/components/admin/AdminFuelList";
+import { AdminServiceList } from "@/components/admin/AdminServiceList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, Lock, UserPlus, FolderPlus, PackageSearch } from "lucide-react";
+import { Shield, Users, PackageSearch, Car, Fuel, Wrench } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { AddGroupDialog } from "@/components/admin/AddGroupDialog";
 import { ExportDataButton } from "@/components/admin/ExportDataButton";
@@ -20,11 +25,13 @@ export default async function AdminDashboardPage() {
         redirect("/dashboard");
     }
 
-    const [users, groups, parts, assets] = await Promise.all([
+    const [users, groups, parts, assets, fuelRecords, serviceRecords] = await Promise.all([
         getUsers(),
         getGroups(),
         getAllPartsSystem(),
         getAllAssetsSystem(),
+        getAllFuelRecordsSystem(),
+        getAllServiceRecordsSystem(),
     ]);
 
     return (
@@ -42,15 +49,24 @@ export default async function AdminDashboardPage() {
             </div>
 
             <Tabs defaultValue="users" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 max-w-[600px]">
-                    <TabsTrigger value="users" className="gap-2">
+                <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+                    <TabsTrigger value="users" className="gap-2 flex-1 min-w-[100px]">
                         <Users className="h-4 w-4" /> Users
                     </TabsTrigger>
-                    <TabsTrigger value="groups" className="gap-2">
+                    <TabsTrigger value="groups" className="gap-2 flex-1 min-w-[100px]">
                         <Shield className="h-4 w-4" /> Groups
                     </TabsTrigger>
-                    <TabsTrigger value="inventory" className="gap-2">
+                    <TabsTrigger value="assets" className="gap-2 flex-1 min-w-[100px]">
+                        <Car className="h-4 w-4" /> Assets
+                    </TabsTrigger>
+                    <TabsTrigger value="inventory" className="gap-2 flex-1 min-w-[100px]">
                         <PackageSearch className="h-4 w-4" /> Inventory
+                    </TabsTrigger>
+                    <TabsTrigger value="fuel" className="gap-2 flex-1 min-w-[100px]">
+                        <Fuel className="h-4 w-4" /> Fuel
+                    </TabsTrigger>
+                    <TabsTrigger value="service" className="gap-2 flex-1 min-w-[100px]">
+                        <Wrench className="h-4 w-4" /> Services
                     </TabsTrigger>
                 </TabsList>
 
@@ -92,6 +108,48 @@ export default async function AdminDashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <AdminInventory parts={parts} allAssets={assets} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="assets" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>System Assets</CardTitle>
+                            <CardDescription>
+                                Overview of all assets registered in the system.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminAssetList assets={assets} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="fuel" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>System Fuel Records</CardTitle>
+                            <CardDescription>
+                                Full history of fuel usage logs across all assets.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminFuelList records={fuelRecords} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="service" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>System Service History</CardTitle>
+                            <CardDescription>
+                                Detailed records of all maintenance and service performed.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminServiceList records={serviceRecords} />
                         </CardContent>
                     </Card>
                 </TabsContent>

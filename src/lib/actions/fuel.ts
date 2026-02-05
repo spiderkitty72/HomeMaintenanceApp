@@ -135,3 +135,127 @@ export async function getFuelRecord(id: string) {
         },
     });
 }
+
+export async function getAllFuelRecordsSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.fuelRecord.findMany({
+        include: {
+            asset: {
+                select: {
+                    name: true,
+                    owner: {
+                        select: {
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+            },
+            attachments: true,
+        },
+        orderBy: {
+            date: "desc",
+        },
+    });
+}
+
+export async function updateFuelRecord(id: string, data: z.infer<typeof FuelRecordSchema>) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("EDIT", "FUEL");
+
+    const existing = await prisma.fuelRecord.findUnique({
+        where: { id },
+        include: { asset: true },
+    });
+
+    if (!existing) throw new Error("Record not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!isAdmin && existing.asset.userId !== session.user.id) {
+        throw new Error("Unauthorized to update this record");
+    }
+
+    const { image, ...fuelData } = data;
+
+    const result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.fuelRecord.update({
+            where: { id },
+            data: {
+                ...fuelData,
+                date: new Date(fuelData.date),
+            },
+        });
+
+        if (image !== undefined) {
+            // Simple sync: delete old and add new if provided
+            await tx.attachment.deleteMany({
+                where: { fuelRecordId: id },
+            });
+
+            if (image) {
+                await tx.attachment.create({
+                    data: {
+                        url: image,
+                        fileType: "IMAGE",
+                        fuelRecordId: id,
+                    },
+                });
+            }
+        }
+
+        // Update asset usage if this is the newest record
+        const latestRecord = await tx.fuelRecord.findFirst({
+            where: { assetId: existing.assetId },
+            orderBy: { usageAtFill: "desc" },
+        });
+
+        if (latestRecord && latestRecord.usageAtFill > existing.asset.currentUsage) {
+            await tx.asset.update({
+                where: { id: existing.assetId },
+                data: { currentUsage: latestRecord.usageAtFill },
+            });
+        }
+
+        return updated;
+    });
+
+    revalidatePath(`/dashboard/asset/${existing.assetId}`);
+    revalidatePath(`/dashboard/fuel/${id}`);
+    revalidatePath("/dashboard/admin");
+    await refreshPredictions(existing.assetId);
+
+    return result;
+}
+
+export async function deleteFuelRecord(id: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("DELETE", "FUEL");
+
+    const existing = await prisma.fuelRecord.findUnique({
+        where: { id },
+        include: { asset: true },
+    });
+
+    if (!existing) throw new Error("Record not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    if (!isAdmin && existing.asset.userId !== session.user.id) {
+        throw new Error("Unauthorized to delete this record");
+    }
+
+    await prisma.fuelRecord.delete({
+        where: { id },
+    });
+
+    revalidatePath(`/dashboard/asset/${existing.assetId}`);
+    revalidatePath("/dashboard/admin");
+    await refreshPredictions(existing.assetId);
+}

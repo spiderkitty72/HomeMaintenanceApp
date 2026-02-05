@@ -150,7 +150,7 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                             trackingMethod={asset.trackingMethod}
                             trigger={
                                 <Button variant="secondary" size="sm" className="w-full h-9 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-none shadow-none text-xs gap-1.5 font-semibold">
-                                    <Plus className="h-3.5 w-3.5" />
+                                    <Wrench className="h-3.5 w-3.5" />
                                     Service
                                 </Button>
                             }

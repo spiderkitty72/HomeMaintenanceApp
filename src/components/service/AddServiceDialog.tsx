@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
-import { createServiceRecord } from "@/lib/actions/service";
+import { Plus, Trash2, Image as ImageIcon, Wrench } from "lucide-react";
+import { createServiceRecord, updateServiceRecord } from "@/lib/actions/service";
 import { getCompatibleParts } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,22 +37,29 @@ interface AddServiceDialogProps {
     assetId: string;
     trackingMethod: string;
     trigger?: React.ReactNode;
+    serviceRecord?: any; // Existing record for editing
 }
 
-export function AddServiceDialog({ assetId, trackingMethod, trigger }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceRecord }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
+    const isEditing = !!serviceRecord;
 
     const form = useForm<ServiceFormValues>({
         resolver: zodResolver(serviceSchema) as any,
-        defaultValues: {
-            date: new Date().toISOString().split("T")[0],
-            usageAtService: 0,
-            summary: "",
-            notes: "",
-            totalCost: 0,
-            vendor: "",
-            parts: [],
+        values: {
+            date: serviceRecord ? new Date(serviceRecord.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            usageAtService: serviceRecord?.usageAtService ?? 0,
+            summary: serviceRecord?.summary ?? "",
+            notes: serviceRecord?.notes ?? "",
+            totalCost: serviceRecord?.totalCost ?? 0,
+            vendor: serviceRecord?.vendor ?? "",
+            parts: serviceRecord?.parts?.map((p: any) => ({
+                partId: p.partId,
+                quantity: p.quantity,
+                costPerUnit: p.costPerUnit,
+            })) || [],
+            image: serviceRecord?.attachments?.[0]?.url ?? "",
         },
     });
 
@@ -79,16 +86,23 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger }: AddServic
 
     async function onSubmit(values: z.infer<typeof serviceSchema>) {
         try {
-            await createServiceRecord({
+            const dataToSubmit = {
                 ...values,
                 assetId,
                 date: new Date(values.date),
-            });
-            toast.success("Service record added");
+            };
+
+            if (isEditing && serviceRecord) {
+                await updateServiceRecord(serviceRecord.id, dataToSubmit);
+                toast.success("Service record updated");
+            } else {
+                await createServiceRecord(dataToSubmit);
+                toast.success("Service record added");
+            }
             setOpen(false);
-            form.reset();
+            if (!isEditing) form.reset();
         } catch (error) {
-            toast.error("Failed to add service record");
+            toast.error(`Failed to ${isEditing ? "update" : "save"} service record`);
         }
     }
 
@@ -106,15 +120,15 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger }: AddServic
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button size="sm">
-                        <Plus className="sm:mr-2 h-4 w-4" />
+                    <Button size="sm" className="gap-2">
+                        <Wrench className="h-4 w-4" />
                         <span className="hidden sm:inline text-xs font-semibold">Add Service</span>
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Log Maintenance / Service</DialogTitle>
+                    <DialogTitle>{isEditing ? "Edit Service Record" : "Log Maintenance / Service"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -307,7 +321,7 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger }: AddServic
                         />
 
                         <Button type="submit" className="w-full">
-                            Save Service Record
+                            {form.formState.isSubmitting ? "Saving..." : (isEditing ? "Save Changes" : "Save Service Record")}
                         </Button>
                     </form>
                 </Form>
