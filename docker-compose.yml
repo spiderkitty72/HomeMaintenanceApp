@@ -5,10 +5,10 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./prisma/dev.db:/app/prisma/dev.db
+      - ./prisma:/app/prisma
       - ./public/uploads:/app/public/uploads
     environment:
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/prisma/dev.db
       - AUTH_SECRET=your_auth_secret_here # Change this in your .env
       - AUTH_TRUST_HOST=true
     restart: always

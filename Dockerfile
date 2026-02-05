@@ -42,4 +42,4 @@ EXPOSE 3000
 
 # Start the application
 # Note: In production, we run migrations before starting
-CMD npx prisma db push && npm start
+CMD npx prisma migrate deploy && npm start
