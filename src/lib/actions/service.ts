@@ -110,3 +110,21 @@ export async function getServiceRecords(assetId: string) {
     });
 }
 
+export async function getServiceRecord(id: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await prisma.serviceRecord.findUnique({
+        where: { id },
+        include: {
+            asset: true,
+            parts: {
+                include: {
+                    part: true,
+                },
+            },
+            attachments: true,
+        },
+    });
+}
+

@@ -122,3 +122,16 @@ export async function getFuelStats(assetId: string) {
         recordCount: records.length,
     };
 }
+
+export async function getFuelRecord(id: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await prisma.fuelRecord.findUnique({
+        where: { id },
+        include: {
+            asset: true,
+            attachments: true,
+        },
+    });
+}
