@@ -16,6 +16,9 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Install openssl for Prisma
+RUN apk add --update --no-cache openssl
+
 # Stage 2: Runner
 FROM node:20-alpine AS runner
 
