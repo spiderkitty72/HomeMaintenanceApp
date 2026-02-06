@@ -53,6 +53,18 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 </Link>
             </div>
 
+            {/* DEBUG INFO - REMOVE LATER */}
+            {process.env.NODE_ENV === "development" && (
+                <div className="mb-4 p-2 bg-black text-white text-[10px] font-mono rounded flex gap-4">
+                    <span>isAdmin: {String(isAdmin)}</span>
+                    <span>isOwner: {String(isOwner)}</span>
+                    <span>hasEdit: {String(hasEditPermission)}</span>
+                    <span>hasDelete: {String(hasDeletePermission)}</span>
+                    <span>canEdit: {String(canEdit)}</span>
+                    <span>canDelete: {String(canDelete)}</span>
+                </div>
+            )}
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{record.summary}</h1>
