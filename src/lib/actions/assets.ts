@@ -103,8 +103,6 @@ export async function deleteAsset(id: string) {
         throw new Error("Unauthorized");
     }
 
-    await ensurePermission("DELETE", "ASSET");
-
     const asset = await prisma.asset.findUnique({
         where: { id },
     });
@@ -129,8 +127,6 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
     }
-
-    await ensurePermission("EDIT", "ASSET");
 
     // Ensure user owns or handles the asset
     const existingAsset = await prisma.asset.findUnique({

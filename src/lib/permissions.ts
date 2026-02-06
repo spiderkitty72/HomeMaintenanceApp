@@ -17,6 +17,11 @@ export async function checkPermission(action: PermissionAction, resource: Permis
     // ADMIN role bypasses everything
     if (user.role === "ADMIN") return true;
 
+    // Baseline permissions for all authenticated users:
+    // Every user can CREATE new records and VIEW resources.
+    // Group permissions are primarily for shared EDIT and DELETE access.
+    if (action === "CREATE" || action === "VIEW") return true;
+
     // Find all permissions for the user's groups
     const permissions = await prisma.permission.findFirst({
         where: {

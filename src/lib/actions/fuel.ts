@@ -167,8 +167,6 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    await ensurePermission("EDIT", "FUEL");
-
     const existing = await prisma.fuelRecord.findUnique({
         where: { id },
         include: { asset: true },
@@ -239,8 +237,6 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
 export async function deleteFuelRecord(id: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
-
-    await ensurePermission("DELETE", "FUEL");
 
     const existing = await prisma.fuelRecord.findUnique({
         where: { id },

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ensurePermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission } from "@/lib/permissions";
 
 const PartSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -77,9 +77,21 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
         throw new Error("Unauthorized");
     }
 
-    await ensurePermission("EDIT", "PART");
-
     const { assetIds, ...partData } = data;
+
+    const existing = await prisma.part.findUnique({
+        where: { id },
+    });
+
+    if (!existing) throw new Error("Part not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = existing.userId === session.user.id;
+    const hasPermission = await checkPermission("EDIT", "PART");
+
+    if (!isAdmin && !isOwner && !hasPermission) {
+        throw new Error("Unauthorized to update this part");
+    }
 
     const part = await prisma.part.update({
         where: { id },
@@ -104,7 +116,19 @@ export async function deletePart(id: string) {
         throw new Error("Unauthorized");
     }
 
-    await ensurePermission("DELETE", "PART");
+    const existing = await prisma.part.findUnique({
+        where: { id },
+    });
+
+    if (!existing) throw new Error("Part not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = existing.userId === session.user.id;
+    const hasPermission = await checkPermission("DELETE", "PART");
+
+    if (!isAdmin && !isOwner && !hasPermission) {
+        throw new Error("Unauthorized to delete this part");
+    }
 
     await prisma.part.delete({
         where: { id },

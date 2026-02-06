@@ -164,8 +164,6 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    await ensurePermission("EDIT", "SERVICE");
-
     const existing = await prisma.serviceRecord.findUnique({
         where: { id },
         include: { asset: true, parts: true },
@@ -271,8 +269,6 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
 export async function deleteServiceRecord(id: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
-
-    await ensurePermission("DELETE", "SERVICE");
 
     const existing = await prisma.serviceRecord.findUnique({
         where: { id },

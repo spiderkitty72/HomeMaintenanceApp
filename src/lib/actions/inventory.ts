@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ensurePermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission } from "@/lib/permissions";
 
 const PurchaseItemSchema = z.object({
     partId: z.string(),
@@ -24,7 +24,19 @@ export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
     const userId = session?.user?.id;
     if (!userId) throw new Error("Unauthorized");
 
-    await ensurePermission("EDIT", "PART");
+    // Ownership check for all parts in the purchase
+    for (const item of data.items) {
+        const p = await prisma.part.findUnique({ where: { id: item.partId } });
+        if (!p) throw new Error(`Part ${item.partId} not found`);
+
+        const isAdmin = (session.user as any).role === "ADMIN";
+        const isOwner = p.userId === userId;
+        const hasPermission = await checkPermission("EDIT", "PART");
+
+        if (!isAdmin && !isOwner && !hasPermission) {
+            throw new Error(`Unauthorized to add purchase for part: ${p.name}`);
+        }
+    }
 
     const totalCost = data.items.reduce((sum, item) => sum + (item.quantity * item.costPerUnit), 0);
 
@@ -103,7 +115,16 @@ export async function adjustInventory(partId: string, newQuantity: number) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    await ensurePermission("EDIT", "PART");
+    const existing = await prisma.part.findUnique({ where: { id: partId } });
+    if (!existing) throw new Error("Part not found");
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = existing.userId === session.user.id;
+    const hasPermission = await checkPermission("EDIT", "PART");
+
+    if (!isAdmin && !isOwner && !hasPermission) {
+        throw new Error("Unauthorized to adjust inventory for this part");
+    }
 
     const part = await prisma.part.update({
         where: { id: partId },
