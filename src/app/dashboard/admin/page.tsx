@@ -125,7 +125,7 @@ export default async function AdminDashboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AdminAssetList assets={assets} />
+                            <AdminAssetList assets={assets} allUsers={users} />
                         </CardContent>
                     </Card>
                 </TabsContent>

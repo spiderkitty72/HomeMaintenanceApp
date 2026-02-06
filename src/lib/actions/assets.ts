@@ -91,10 +91,68 @@ export async function getAllAssetsSystem() {
     }
 
     return await prisma.asset.findMany({
+        include: {
+            owner: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            sharedWith: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+            },
+        },
         orderBy: {
             name: "asc",
         },
     });
+}
+
+export async function updateAssetAccess(id: string, ownerId: string, sharedUserIds: string[]) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            // Update owner
+            await tx.asset.update({
+                where: { id },
+                data: { userId: ownerId },
+            });
+
+            // Update shares
+            await tx.assetShare.deleteMany({
+                where: { assetId: id },
+            });
+
+            await tx.assetShare.createMany({
+                data: sharedUserIds.map((userId) => ({
+                    assetId: id,
+                    userId,
+                    permission: "READ",
+                })),
+            });
+        });
+
+        revalidatePath("/dashboard");
+        revalidatePath("/dashboard/admin");
+        revalidatePath(`/dashboard/asset/${id}`);
+        return { success: true };
+    } catch (error) {
+        console.error("UPDATE_ASSET_ACCESS_ERROR:", error);
+        throw error;
+    }
 }
 
 export async function deleteAsset(id: string) {

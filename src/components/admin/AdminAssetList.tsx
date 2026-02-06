@@ -14,16 +14,18 @@ import { Badge } from "@/components/ui/badge";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { deleteAsset } from "@/lib/actions/assets";
 import { toast } from "sonner";
-import { Car, Home, UtilityPole, Trash2, User, Search, Edit2, Filter } from "lucide-react";
+import { Car, Home, UtilityPole, Trash2, User, Search, Edit2, Filter, Shield } from "lucide-react";
+import { ManageAssetAccessDialog } from "./ManageAssetAccessDialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ASSET_TYPES } from "@/lib/constants";
 
 interface AdminAssetListProps {
     assets: any[];
+    allUsers: any[];
 }
 
-export function AdminAssetList({ assets }: AdminAssetListProps) {
+export function AdminAssetList({ assets, allUsers }: AdminAssetListProps) {
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState<string>("ALL");
 
@@ -141,6 +143,10 @@ export function AdminAssetList({ assets }: AdminAssetListProps) {
                                                     <Edit2 className="h-4 w-4" />
                                                 </Button>
                                             }
+                                        />
+                                        <ManageAssetAccessDialog
+                                            asset={asset}
+                                            allUsers={allUsers}
                                         />
                                         <Button
                                             size="icon"
