@@ -1,0 +1,239 @@
+USERS:
+[
+  {
+    "id": "cml8ayh8d000012e7bwldpmpv",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "emailVerified": null,
+    "image": null,
+    "password": "$2b$10$4QpTQPpTZ9afG2GYTBdLR.7SmD.C6g/guzIBrklOdAr6iVZDmRefy",
+    "role": "ADMIN",
+    "preferences": null
+  },
+  {
+    "id": "cml8gvjik0004s0pz2lg0q51m",
+    "name": "Josh Nell",
+    "email": "joshua.james.nell@gmail.com",
+    "emailVerified": null,
+    "image": null,
+    "password": "$2b$10$HhWLUUCHT.hjlz1pjZAzW.Osm9IZJ4pIL4m63PrJAp50Oz7arTOWm",
+    "role": "USER",
+    "preferences": null
+  }
+]
+
+GROUPS:
+[
+  {
+    "id": "cml8ayhdg000112e7mqijlq16",
+    "name": "Administrators",
+    "description": "Full system access",
+    "createdAt": "2026-02-04T17:29:33.556Z",
+    "updatedAt": "2026-02-04T17:29:33.556Z",
+    "permissions": [
+      {
+        "id": "cml8ayhjv000512e7i7ljoc3d",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "CREATE",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8ayicu000l12e7q62gmjyz",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "CREATE",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8ayiue000t12e7a3yx4b90",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "CREATE",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8ayhyx000d12e7cdrr69oj",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "CREATE",
+        "resource": "SERVICE"
+      },
+      {
+        "id": "cml8ayhre000912e7nudysa7w",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "DELETE",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8ayimv000p12e7c8qo3k71",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "DELETE",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8ayj1x000x12e7tfmkk2z7",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "DELETE",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8ayi5v000h12e71hyqc0ol",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "DELETE",
+        "resource": "SERVICE"
+      },
+      {
+        "id": "cml8ayhnh000712e7gkrbw384",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "EDIT",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8ayijj000n12e76h85063v",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "EDIT",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8ayiy0000v12e7etx5uibx",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "EDIT",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8ayi2j000f12e7hhodnw8y",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "EDIT",
+        "resource": "SERVICE"
+      },
+      {
+        "id": "cml8ayhv0000b12e7q6vc5cax",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "VIEW",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8ayiqs000r12e7x3phf2ew",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "VIEW",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8ayj5j000z12e7pfv714r7",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "VIEW",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8ayi9i000j12e7en7cwoxn",
+        "groupId": "cml8ayhdg000112e7mqijlq16",
+        "action": "VIEW",
+        "resource": "SERVICE"
+      }
+    ]
+  },
+  {
+    "id": "cml8c44n9000geax6gf9jx7dp",
+    "name": "Users",
+    "description": "General Users",
+    "createdAt": "2026-02-04T18:01:56.614Z",
+    "updatedAt": "2026-02-04T18:01:56.614Z",
+    "permissions": [
+      {
+        "id": "cml8c4k6v000jeax6y9exqbo5",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "CREATE",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8c4k6v000keax62pz340y8",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "CREATE",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8c4k6v000heax6yqz4s7ax",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "CREATE",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8c4k6v000ieax6qm4us7zs",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "CREATE",
+        "resource": "SERVICE"
+      },
+      {
+        "id": "cml8c4k6v000leax68pk4mphj",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "EDIT",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8c4k6v000neax6jm9g8uzi",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "EDIT",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8c4k6v000oeax6qmi3ws3d",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "EDIT",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8c4k6v000meax6jepaofum",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "EDIT",
+        "resource": "SERVICE"
+      },
+      {
+        "id": "cml8c4k6v000peax6vyb6hro6",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "VIEW",
+        "resource": "ASSET"
+      },
+      {
+        "id": "cml8c4k6v000reax6g0jim7yc",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "VIEW",
+        "resource": "FUEL"
+      },
+      {
+        "id": "cml8c4k6v000seax6xzfpglah",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "VIEW",
+        "resource": "PART"
+      },
+      {
+        "id": "cml8c4k6v000qeax64146zqsy",
+        "groupId": "cml8c44n9000geax6gf9jx7dp",
+        "action": "VIEW",
+        "resource": "SERVICE"
+      }
+    ]
+  }
+]
+
+MEMBERSHIPS:
+[
+  {
+    "id": "cml8ayhgt000312e7zw581mja",
+    "groupId": "cml8ayhdg000112e7mqijlq16",
+    "userId": "cml8ayh8d000012e7bwldpmpv",
+    "user": {
+      "id": "cml8ayh8d000012e7bwldpmpv",
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "emailVerified": null,
+      "image": null,
+      "password": "$2b$10$4QpTQPpTZ9afG2GYTBdLR.7SmD.C6g/guzIBrklOdAr6iVZDmRefy",
+      "role": "ADMIN",
+      "preferences": null
+    },
+    "group": {
+      "id": "cml8ayhdg000112e7mqijlq16",
+      "name": "Administrators",
+      "description": "Full system access",
+      "createdAt": "2026-02-04T17:29:33.556Z",
+      "updatedAt": "2026-02-04T17:29:33.556Z"
+    }
+  }
+]
