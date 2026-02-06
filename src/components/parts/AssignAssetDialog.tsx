@@ -55,7 +55,7 @@ export function AssignAssetDialog({ part, assets }: AssignAssetDialogProps) {
                     <LinkIcon className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px]">
+            <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Assign Part: {part.name}</DialogTitle>
                 </DialogHeader>

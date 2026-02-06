@@ -78,7 +78,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
                     <Settings2 className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit User: {user.name}</DialogTitle>
                 </DialogHeader>

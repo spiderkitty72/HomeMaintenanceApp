@@ -87,7 +87,7 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
                     <Plus className="h-4 w-4" /> Add Spec
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Add Asset Specification</DialogTitle>
                 </DialogHeader>

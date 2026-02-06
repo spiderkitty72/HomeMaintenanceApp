@@ -85,7 +85,7 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: Add
                     <span className="hidden sm:inline">Add Schedule</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Add Maintenance Schedule</DialogTitle>
                 </DialogHeader>

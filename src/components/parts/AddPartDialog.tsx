@@ -107,7 +107,7 @@ export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{mode === "edit" ? "Edit Part" : "Add New Part"}</DialogTitle>
                 </DialogHeader>

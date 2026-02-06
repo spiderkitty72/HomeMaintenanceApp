@@ -58,7 +58,7 @@ export function ManageMembersDialog({ groupId, groupName, members, allUsers }: M
                     <UserPlus className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Manage Members: {groupName}</DialogTitle>
                 </DialogHeader>
