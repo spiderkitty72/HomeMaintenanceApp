@@ -52,7 +52,6 @@ export async function getParts() {
 
     // Return parts owned by user or shared via groups
     // For now, simplicity: parts owned by the user
-    // @ts-ignore
     return await prisma.part.findMany({
         where: {
             userId: session.user.id,
@@ -226,7 +225,6 @@ export async function getCompatibleParts(assetId: string) {
 
     if (!asset) return [];
 
-    // @ts-ignore
     return await prisma.part.findMany({
         where: {
             userId: session.user.id,
