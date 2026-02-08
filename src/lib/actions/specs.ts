@@ -16,6 +16,7 @@ export async function getSpecTypes() {
     const userId = await ensureAuth();
     return await prisma.assetSpecType.findMany({
         where: {
+            isActive: true,
             OR: [
                 { userId },
                 {
@@ -31,6 +32,58 @@ export async function getSpecTypes() {
         },
         orderBy: { name: "asc" },
     });
+}
+
+/**
+ * System-wide retrieval for Admin management
+ */
+export async function getAllSpecTypesSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.assetSpecType.findMany({
+        include: {
+            user: {
+                select: { name: true, email: true }
+            },
+            _count: {
+                select: { specs: true }
+            }
+        },
+        orderBy: { name: "asc" },
+    });
+}
+
+export async function updateSpecType(id: string, name: string, unit: string | null) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    const updated = await prisma.assetSpecType.update({
+        where: { id },
+        data: { name, unit },
+    });
+
+    revalidatePath("/dashboard/admin");
+    return updated;
+}
+
+export async function toggleSpecTypeStatus(id: string, isActive: boolean) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    await prisma.assetSpecType.update({
+        where: { id },
+        data: { isActive },
+    });
+
+    revalidatePath("/dashboard/admin");
+    revalidatePath("/dashboard/asset");
 }
 
 export async function addSpecType(name: string, unit: string | null) {

@@ -6,16 +6,18 @@ import { getAllPartsSystem } from "@/lib/actions/parts";
 import { getAllAssetsSystem } from "@/lib/actions/assets";
 import { getAllFuelRecordsSystem } from "@/lib/actions/fuel";
 import { getAllServiceRecordsSystem } from "@/lib/actions/service";
+import { getAllSpecTypesSystem } from "@/lib/actions/specs";
 import { UserList } from "@/components/admin/UserList";
 import { GroupList } from "@/components/admin/GroupList";
 import { AdminInventory } from "@/components/admin/AdminInventory";
 import { AdminAssetList } from "@/components/admin/AdminAssetList";
 import { AdminFuelList } from "@/components/admin/AdminFuelList";
 import { AdminServiceList } from "@/components/admin/AdminServiceList";
+import { AdminSpecTypeList } from "@/components/admin/AdminSpecTypeList";
 import { AdminSystemTab } from "@/components/admin/AdminSystemTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, PackageSearch, Car, Fuel, Wrench, Settings } from "lucide-react";
+import { Shield, Users, PackageSearch, Car, Fuel, Wrench, Settings, ListChecks } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { AddGroupDialog } from "@/components/admin/AddGroupDialog";
 import { ExportDataButton } from "@/components/admin/ExportDataButton";
@@ -26,13 +28,14 @@ export default async function AdminDashboardPage() {
         redirect("/dashboard");
     }
 
-    const [users, groups, parts, assets, fuelRecords, serviceRecords] = await Promise.all([
+    const [users, groups, parts, assets, fuelRecords, serviceRecords, specTypes] = await Promise.all([
         getUsers(),
         getGroups(),
         getAllPartsSystem(),
         getAllAssetsSystem(),
         getAllFuelRecordsSystem(),
         getAllServiceRecordsSystem(),
+        getAllSpecTypesSystem(),
     ]);
 
     return (
@@ -68,6 +71,9 @@ export default async function AdminDashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="service" className="gap-2 flex-1 min-w-[100px]">
                         <Wrench className="h-4 w-4" /> Services
+                    </TabsTrigger>
+                    <TabsTrigger value="specs_library" className="gap-2 flex-1 min-w-[100px]">
+                        <ListChecks className="h-4 w-4" /> Specs Library
                     </TabsTrigger>
                     <TabsTrigger value="system" className="gap-2 flex-1 min-w-[100px]">
                         <Settings className="h-4 w-4" /> System
@@ -154,6 +160,20 @@ export default async function AdminDashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <AdminServiceList records={serviceRecords} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="specs_library" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Global Specification Library</CardTitle>
+                            <CardDescription>
+                                Manage standardized labels and units for asset specifications.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminSpecTypeList specTypes={specTypes} />
                         </CardContent>
                     </Card>
                 </TabsContent>
