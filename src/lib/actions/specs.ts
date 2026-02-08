@@ -15,7 +15,20 @@ async function ensureAuth() {
 export async function getSpecTypes() {
     const userId = await ensureAuth();
     return await prisma.assetSpecType.findMany({
-        where: { userId },
+        where: {
+            OR: [
+                { userId },
+                {
+                    specs: {
+                        some: {
+                            asset: {
+                                userId
+                            }
+                        }
+                    }
+                }
+            ]
+        },
         orderBy: { name: "asc" },
     });
 }
