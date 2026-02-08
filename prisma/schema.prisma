@@ -130,6 +130,7 @@ model AssetSpecType {
   userId    String
   name      String
   unit      String?  // e.g. PSI, Quarts, Ft-lbs
+  isActive  Boolean  @default(true)
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   specs     AssetSpec[]
