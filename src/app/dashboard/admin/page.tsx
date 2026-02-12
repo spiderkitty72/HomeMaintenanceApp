@@ -7,6 +7,7 @@ import { getAllAssetsSystem } from "@/lib/actions/assets";
 import { getAllFuelRecordsSystem } from "@/lib/actions/fuel";
 import { getAllServiceRecordsSystem } from "@/lib/actions/service";
 import { getAllSpecTypesSystem } from "@/lib/actions/specs";
+import { getAllPurchasesSystem } from "@/lib/actions/inventory";
 import { UserList } from "@/components/admin/UserList";
 import { GroupList } from "@/components/admin/GroupList";
 import { AdminInventory } from "@/components/admin/AdminInventory";
@@ -14,10 +15,11 @@ import { AdminAssetList } from "@/components/admin/AdminAssetList";
 import { AdminFuelList } from "@/components/admin/AdminFuelList";
 import { AdminServiceList } from "@/components/admin/AdminServiceList";
 import { AdminSpecTypeList } from "@/components/admin/AdminSpecTypeList";
+import { AdminPurchaseList } from "@/components/admin/AdminPurchaseList";
 import { AdminSystemTab } from "@/components/admin/AdminSystemTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, PackageSearch, Car, Fuel, Wrench, Settings, ListChecks } from "lucide-react";
+import { Shield, Users, PackageSearch, Car, Fuel, Wrench, Settings, ListChecks, ShoppingBag } from "lucide-react";
 import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { AddGroupDialog } from "@/components/admin/AddGroupDialog";
 import { ExportDataButton } from "@/components/admin/ExportDataButton";
@@ -28,7 +30,7 @@ export default async function AdminDashboardPage() {
         redirect("/dashboard");
     }
 
-    const [users, groups, parts, assets, fuelRecords, serviceRecords, specTypes] = await Promise.all([
+    const [users, groups, parts, assets, fuelRecords, serviceRecords, specTypes, purchases] = await Promise.all([
         getUsers(),
         getGroups(),
         getAllPartsSystem(),
@@ -36,6 +38,7 @@ export default async function AdminDashboardPage() {
         getAllFuelRecordsSystem(),
         getAllServiceRecordsSystem(),
         getAllSpecTypesSystem(),
+        getAllPurchasesSystem(),
     ]);
 
     return (
@@ -71,6 +74,9 @@ export default async function AdminDashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="service" className="gap-2 flex-1 min-w-[100px]">
                         <Wrench className="h-4 w-4" /> Services
+                    </TabsTrigger>
+                    <TabsTrigger value="purchases" className="gap-2 flex-1 min-w-[100px]">
+                        <ShoppingBag className="h-4 w-4" /> Purchases
                     </TabsTrigger>
                     <TabsTrigger value="specs_library" className="gap-2 flex-1 min-w-[100px]">
                         <ListChecks className="h-4 w-4" /> Specs Library
@@ -160,6 +166,20 @@ export default async function AdminDashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <AdminServiceList records={serviceRecords} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="purchases" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>System Purchase Records</CardTitle>
+                            <CardDescription>
+                                Monitor and manage all part purchases made by system users.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AdminPurchaseList purchases={purchases} />
                         </CardContent>
                     </Card>
                 </TabsContent>
