@@ -98,7 +98,7 @@ export async function getPartPurchases(partId: string) {
                 include: {
                     attachments: true,
                     user: {
-                        select: { name: true }
+                        select: { name: true, email: true }
                     }
                 }
             },
@@ -109,6 +109,90 @@ export async function getPartPurchases(partId: string) {
             }
         },
     });
+}
+
+/**
+ * System-wide retrieval for Admin management
+ */
+export async function getAllPurchasesSystem() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    return await prisma.partPurchase.findMany({
+        include: {
+            user: {
+                select: { name: true, email: true }
+            },
+            items: {
+                include: {
+                    part: {
+                        select: { name: true, partNumber: true }
+                    }
+                }
+            },
+            attachments: true,
+        },
+        orderBy: {
+            date: "desc",
+        },
+    });
+}
+
+export async function deletePartPurchase(id: string) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    const purchase = await prisma.partPurchase.findUnique({
+        where: { id },
+        include: { items: true },
+    });
+
+    if (!purchase) throw new Error("Purchase not found");
+
+    await prisma.$transaction(async (tx) => {
+        // Roll back inventory quantities
+        for (const item of purchase.items) {
+            await tx.part.update({
+                where: { id: item.partId },
+                data: {
+                    quantityOnHand: {
+                        decrement: item.quantity,
+                    },
+                },
+            });
+        }
+
+        // Delete the purchase (cascades to items and attachments)
+        await tx.partPurchase.delete({
+            where: { id },
+        });
+    });
+
+    revalidatePath("/dashboard/admin");
+    revalidatePath("/dashboard/parts");
+}
+
+export async function updatePartPurchase(id: string, data: { date: Date, vendor?: string }) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    const updated = await prisma.partPurchase.update({
+        where: { id },
+        data: {
+            date: data.date,
+            vendor: data.vendor,
+        },
+    });
+
+    revalidatePath("/dashboard/admin");
+    revalidatePath("/dashboard/parts");
+    return updated;
 }
 
 export async function adjustInventory(partId: string, newQuantity: number) {
