@@ -13,22 +13,10 @@ async function ensureAuth() {
 }
 
 export async function getSpecTypes() {
-    const userId = await ensureAuth();
+    await ensureAuth();
     return await prisma.assetSpecType.findMany({
         where: {
             isActive: true,
-            OR: [
-                { userId },
-                {
-                    specs: {
-                        some: {
-                            asset: {
-                                userId
-                            }
-                        }
-                    }
-                }
-            ]
         },
         orderBy: { name: "asc" },
     });
