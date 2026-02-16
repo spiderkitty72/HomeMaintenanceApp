@@ -242,6 +242,13 @@ export async function getCompatibleParts(assetId: string) {
                 },
             ],
         },
+        include: {
+            compatibilities: {
+                include: {
+                    asset: true,
+                },
+            },
+        },
         orderBy: {
             name: "asc",
         },
