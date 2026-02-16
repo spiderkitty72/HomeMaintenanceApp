@@ -28,8 +28,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Settings2 } from "lucide-react";
-import { updateUser } from "@/lib/actions/users";
+import { Settings2, KeyRound, Lock, UserCog } from "lucide-react";
+import { updateUser, adminResetPassword } from "@/lib/actions/users";
 import { toast } from "sonner";
 
 const userSchema = z.object({
@@ -51,6 +51,8 @@ interface EditUserDialogProps {
 
 export function EditUserDialog({ user }: EditUserDialogProps) {
     const [open, setOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState("");
+    const [isResetting, setIsResetting] = useState(false);
 
     const form = useForm<UserFormValues>({
         resolver: zodResolver(userSchema),
@@ -60,6 +62,24 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             role: user.role,
         },
     });
+
+    async function handleResetPassword() {
+        if (!newPassword || newPassword.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
+
+        setIsResetting(true);
+        try {
+            await adminResetPassword(user.id, newPassword);
+            toast.success("Password reset successfully");
+            setNewPassword("");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to reset password");
+        } finally {
+            setIsResetting(false);
+        }
+    }
 
     async function onSubmit(values: UserFormValues) {
         try {
@@ -136,6 +156,33 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
                         </Button>
                     </form>
                 </Form>
+
+                <div className="my-4 border-t" />
+
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2 text-primary">
+                        <KeyRound className="h-4 w-4" />
+                        <h3 className="text-sm font-semibold">Administrative Reset</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Reset this user's password. They will need to use this new password for their next sign-in.
+                    </p>
+                    <div className="flex space-x-2">
+                        <Input
+                            type="password"
+                            placeholder="New password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                        <Button
+                            variant="outline"
+                            onClick={handleResetPassword}
+                            disabled={isResetting || !newPassword}
+                        >
+                            {isResetting ? "Resetting..." : "Reset"}
+                        </Button>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

@@ -112,3 +112,62 @@ export async function updateUser(userId: string, data: Partial<z.infer<typeof Cr
     revalidatePath("/dashboard/admin");
     return user;
 }
+
+export async function updateSelf(data: { name?: string; email?: string }) {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) throw new Error("Unauthorized");
+
+    const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            name: data.name,
+            email: data.email,
+        },
+    });
+
+    revalidatePath("/dashboard/settings");
+    return updated;
+}
+
+export async function changePassword(data: { currentPassword: string; newPassword: string }) {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) throw new Error("Unauthorized");
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if (!user || !user.password) {
+        throw new Error("User not found or has no password set");
+    }
+
+    const isValid = await bcrypt.compare(data.currentPassword, user.password);
+    if (!isValid) {
+        throw new Error("Current password is incorrect");
+    }
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+    });
+
+    return { success: true };
+}
+
+export async function adminResetPassword(userId: string, newPassword: string) {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+    });
+
+    return { success: true };
+}
