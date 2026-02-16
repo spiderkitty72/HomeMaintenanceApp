@@ -21,6 +21,8 @@ import { getCompatibleParts } from "@/lib/actions/parts";
 import { Package, ListChecks } from "lucide-react";
 import { getAssetSpecs } from "@/lib/actions/specs";
 import { SpecList } from "@/components/assets/SpecList";
+import { AssetPartsList } from "@/components/assets/AssetPartsList";
+import { getAssets } from "@/lib/actions/assets";
 
 export default async function AssetDetailPage({ params }: { params: { id: string } }) {
     const { id } = await params;
@@ -46,12 +48,23 @@ export default async function AssetDetailPage({ params }: { params: { id: string
         notFound();
     }
 
-    const serviceRecords = await getServiceRecords(id);
-    const fuelRecords = await getFuelRecords(id);
-    const fuelStats = await getFuelStats(id);
-    const schedules = await getSchedules(id);
-    const compatibleParts = await getCompatibleParts(id);
-    const specs = await getAssetSpecs(id);
+    const [
+        serviceRecords,
+        fuelRecords,
+        fuelStats,
+        schedules,
+        compatibleParts,
+        specs,
+        allAssets
+    ] = await Promise.all([
+        getServiceRecords(id),
+        getFuelRecords(id),
+        getFuelStats(id),
+        getSchedules(id),
+        getCompatibleParts(id),
+        getAssetSpecs(id),
+        getAssets()
+    ]);
 
     // Find the most urgent reminder
     const urgentSchedule = schedules.find(s => {
@@ -226,40 +239,7 @@ export default async function AssetDetailPage({ params }: { params: { id: string
                             <SpecList assetId={asset.id} specs={specs} />
                         </TabsContent>
                         <TabsContent value="parts">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Assigned & Compatible Parts</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {compatibleParts.length === 0 && (
-                                            <div className="col-span-full py-8 text-center text-muted-foreground italic">
-                                                No parts assigned to this asset yet.
-                                                <div className="mt-2">
-                                                    <Link href="/dashboard/parts" className="text-primary hover:underline">
-                                                        Manage Parts Catalog
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {compatibleParts.map((part) => (
-                                            <div key={part.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-primary/10 rounded-full">
-                                                        <Package className="h-5 w-5 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-semibold">{part.name}</div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {part.manufacturer} {part.partNumber && `• ${part.partNumber}`}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <AssetPartsList parts={compatibleParts} assets={allAssets} />
                         </TabsContent>
                     </Tabs>
                 </div>
