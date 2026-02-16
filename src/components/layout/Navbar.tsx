@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Wrench, Menu, LayoutDashboard, Package, ShieldCheck, LogOut } from "lucide-react";
+import { Wrench, Menu, LayoutDashboard, Package, ShieldCheck, LogOut, Settings } from "lucide-react";
 import {
     Sheet,
     SheetContent,
@@ -29,6 +29,10 @@ export async function Navbar() {
                     <span>Admin</span>
                 </Link>
             )}
+            <Link href="/dashboard/settings" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
+                <Settings className="h-4 w-4 md:hidden" />
+                <span>Settings</span>
+            </Link>
         </>
     );
 
