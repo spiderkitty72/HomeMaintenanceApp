@@ -45,7 +45,7 @@ A comprehensive maintenance tracking system designed to help you manage assets (
 3. **Environment Setup**:
    Create a `.env` file in the root directory (or use the provided `.env.local` templates):
    ```env
-   DATABASE_URL="file:./dev.db"
+   DATABASE_URL="file:./prisma/dev.db"
    AUTH_SECRET="your-secret-here" # Generate with: npx auth secret
    ```
 
@@ -83,11 +83,11 @@ docker-compose up -d
 
 The app is configured to use **bind mounts** for data persistence. This ensures your database and uploads are stored safely on your host machine even if the container is removed:
 
-- **Database**: Stored in `./prisma/dev.db`
+- **Database**: Stored in `./data/dev.db`
 - **Uploads**: Stored in `./public/uploads/`
 
 > [!NOTE]
-> Ensure the `./public/uploads` directory exists on your host machine to avoid permission issues when the container starts.
+> Ensure the `./data` and `./public/uploads` directories exist on your host machine to avoid permission issues when the container starts.
 
 ## 📄 License
 
