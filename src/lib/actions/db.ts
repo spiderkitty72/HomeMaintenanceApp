@@ -71,111 +71,76 @@ export async function exportDatabaseJSON() {
  * Imports data from a JSON object.
  * WARNING: This is a destructive operation or deep merge based on IDs.
  */
+/**
+ * Recursively converts ISO date strings back into Date objects.
+ */
+function parseDates(obj: any): any {
+    if (obj === null || typeof obj !== "object") return obj;
+
+    for (const key in obj) {
+        const val = obj[key];
+        if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+            const date = new Date(val);
+            if (!isNaN(date.getTime())) {
+                obj[key] = date;
+            }
+        } else if (typeof val === "object") {
+            parseDates(val);
+        }
+    }
+    return obj;
+}
+
 export async function importDatabaseJSON(data: any) {
     const session = await auth();
     if ((session?.user as any)?.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
+    // Convert string dates back to Date objects
+    const parsedData = parseDates(data);
+
     try {
-        // We use a transaction to ensure atomicity
         await prisma.$transaction(async (tx) => {
-            // Priority 1: Users & Groups
-            if (data.users) {
-                for (const item of data.users) {
-                    await tx.user.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.groups) {
-                for (const item of data.groups) {
-                    await tx.group.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
+            const tables = [
+                { name: "users", model: tx.user },
+                { name: "groups", model: tx.group },
+                { name: "groupMembers", model: tx.groupMember },
+                { name: "permissions", model: tx.permission },
+                { name: "assets", model: tx.asset },
+                { name: "assetSpecTypes", model: tx.assetSpecType },
+                { name: "assetSpecs", model: tx.assetSpec },
+                { name: "assetShares", model: tx.assetShare },
+                { name: "parts", model: tx.part },
+                { name: "partPurchases", model: tx.partPurchase },
+                { name: "partPurchaseItems", model: tx.partPurchaseItem },
+                { name: "compatibilities", model: tx.assetPartCompatibility },
+                { name: "serviceRecords", model: tx.serviceRecord },
+                { name: "serviceParts", model: tx.servicePart },
+                { name: "fuelRecords", model: tx.fuelRecord },
+                { name: "schedules", model: tx.serviceSchedule },
+                { name: "attachments", model: tx.attachment },
+            ];
 
-            // Priority 2: Relations dependent on Users/Groups
-            if (data.groupMembers) {
-                for (const item of data.groupMembers) {
-                    await tx.groupMember.upsert({ where: { id: item.id }, update: item, create: item });
+            for (const table of tables) {
+                if (parsedData[table.name]) {
+                    console.log(`Importing ${parsedData[table.name].length} items into ${table.name}...`);
+                    for (const item of parsedData[table.name]) {
+                        try {
+                            await (table.model as any).upsert({
+                                where: { id: item.id },
+                                update: item,
+                                create: item
+                            });
+                        } catch (itemError) {
+                            console.error(`Failed to import item ${item.id} into ${table.name}:`, itemError);
+                            throw itemError;
+                        }
+                    }
                 }
             }
-            if (data.permissions) {
-                for (const item of data.permissions) {
-                    await tx.permission.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-
-            // Assets
-            if (data.assets) {
-                for (const item of data.assets) {
-                    await tx.asset.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-
-            // Data dependent on Assets
-            if (data.assetSpecTypes) {
-                for (const item of data.assetSpecTypes) {
-                    await tx.assetSpecType.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.assetSpecs) {
-                for (const item of data.assetSpecs) {
-                    await tx.assetSpec.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.assetShares) {
-                for (const item of data.assetShares) {
-                    await tx.assetShare.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-
-            // Parts
-            if (data.parts) {
-                for (const item of data.parts) {
-                    await tx.part.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.partPurchases) {
-                for (const item of data.partPurchases) {
-                    await tx.partPurchase.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.partPurchaseItems) {
-                for (const item of data.partPurchaseItems) {
-                    await tx.partPurchaseItem.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.compatibilities) {
-                for (const item of data.compatibilities) {
-                    await tx.assetPartCompatibility.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-
-            // Records
-            if (data.serviceRecords) {
-                for (const item of data.serviceRecords) {
-                    await tx.serviceRecord.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.serviceParts) {
-                for (const item of data.serviceParts) {
-                    await tx.servicePart.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.fuelRecords) {
-                for (const item of data.fuelRecords) {
-                    await tx.fuelRecord.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.schedules) {
-                for (const item of data.schedules) {
-                    await tx.serviceSchedule.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
-            if (data.attachments) {
-                for (const item of data.attachments) {
-                    await tx.attachment.upsert({ where: { id: item.id }, update: item, create: item });
-                }
-            }
+        }, {
+            timeout: 30000 // Increase timeout for large imports
         });
 
         revalidatePath("/admin");
