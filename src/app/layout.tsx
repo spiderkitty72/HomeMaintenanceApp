@@ -18,6 +18,15 @@ import { VersionDisplay } from "@/components/VersionDisplay";
 export const metadata: Metadata = {
   title: "MaintenanceApp",
   description: "Track your assets and maintenance schedules",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MaintenanceApp",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport = {
@@ -25,6 +34,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({
