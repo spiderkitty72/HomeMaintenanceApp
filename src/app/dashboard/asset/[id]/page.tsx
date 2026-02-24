@@ -24,7 +24,7 @@ import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getAssets } from "@/lib/actions/assets";
 
-export default async function AssetDetailPage({ params }: { params: { id: string } }) {
+export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const session = await auth();
 
