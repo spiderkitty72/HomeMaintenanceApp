@@ -16,6 +16,7 @@ ENV DATABASE_URL="file:/app/data/dev.db"
 ARG DATABASE_URL="file:/app/data/dev.db"
 
 # Increment version during build
+COPY increment-version.js ./
 RUN node increment-version.js
 
 # Copy source and prisma
