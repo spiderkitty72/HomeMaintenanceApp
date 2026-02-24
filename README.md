@@ -61,7 +61,7 @@ A comprehensive maintenance tracking system designed to help you manage assets (
    ```
    **Default Credentials:**
    - **Email**: `admin@example.com`
-   - **Password**: `password123`
+   - **Password**: `maintenance`
 
 6. **Run the Development Server**:
    ```bash
