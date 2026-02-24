@@ -5,7 +5,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      # Bind mount for database persistence (mounts the whole prisma folder to include migrations)
       - ./prisma:/app/prisma
+      # Bind mount for user-uploaded files
       - ./public/uploads:/app/public/uploads
     environment:
       - DATABASE_URL=file:/app/prisma/dev.db
