@@ -73,6 +73,8 @@ A comprehensive maintenance tracking system designed to help you manage assets (
 
 You can also run the application using Docker Compose:
 
+This will spin up the application in production mode on port 3030.
+
 ```bash
 docker-compose up -d
 ```
