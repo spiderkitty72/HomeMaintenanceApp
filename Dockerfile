@@ -11,6 +11,10 @@ COPY package*.json ./
 # npm ci is faster and more reliable than npm install
 RUN npm ci
 
+# Provide a dummy DATABASE_URL for build-time Prisma validation
+ENV DATABASE_URL="file:/app/prisma/dev.db"
+ARG DATABASE_URL="file:/app/prisma/dev.db"
+
 # Copy source and prisma
 COPY . .
 

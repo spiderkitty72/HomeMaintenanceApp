@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Maintenance App
 
-## Getting Started
+A comprehensive maintenance tracking system designed to help you manage assets (vehicles, equipment, property), track service history, monitor fuel usage, and stay on top of maintenance schedules.
 
-First, run the development server:
+## 🚀 Key Features
+
+- **Asset Management**: Track unlimited assets with flexible tracking methods (Mileage, Hours, or Date-only).
+- **Service Records**: Maintain detailed service history including summary, notes, vendor information, and total costs.
+- **Fuel Tracking**: Log fuel fills to monitor consumption, price fluctuations, and efficiency.
+- **Parts Inventory**: Manage a catalog of parts with stock levels, manufacturer details, and compatibility mapping to assets.
+- **Maintenance Schedules**: Set up recurring maintenance reminders based on usage intervals or calendar dates.
+- **Flexible Permissions**: Robust group-based access control (RBAC) to share assets and manage team collaboration.
+- **Attachment Support**: Upload and link receipts, manuals, or photos directly to records.
+- **Data Export**: Export inventory and records to Excel for external reporting.
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **Database**: [Prisma](https://prisma.io) with **SQLite**
+- **Authentication**: [NextAuth.js](https://next-auth.js.org) (v5)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com) & [Shadcn UI](https://ui.shadcn.com)
+- **Icons**: [Lucide React](https://lucide.dev)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+
+## 🏁 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm / yarn / pnpm
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd maintenance-app
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**:
+   Create a `.env` file in the root directory (or use the provided `.env.local` templates):
+   ```env
+   DATABASE_URL="file:./dev.db"
+   AUTH_SECRET="your-secret-here" # Generate with: npx auth secret
+   ```
+
+4. **Initialize Database**:
+   ```bash
+   npx prisma db push
+   ```
+
+5. **Seed Initial Data (Admin Account)**:
+   This creates a default admin user and base permission groups.
+   ```bash
+   npx prisma db seed
+   ```
+   **Default Credentials:**
+   - **Email**: `admin@example.com`
+   - **Password**: `password123`
+
+6. **Run the Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to see the application.
+
+## 🐳 Docker Support
+
+You can also run the application using Docker Compose:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker-compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Data Persistence
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app is configured to use **bind mounts** for data persistence. This ensures your database and uploads are stored safely on your host machine even if the container is removed:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Database**: Stored in `./prisma/dev.db`
+- **Uploads**: Stored in `./public/uploads/`
 
-## Learn More
+> [!NOTE]
+> Ensure the `./public/uploads` directory exists on your host machine to avoid permission issues when the container starts.
 
-To learn more about Next.js, take a look at the following resources:
+## 📄 License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check individual file headers or the license file for details.
