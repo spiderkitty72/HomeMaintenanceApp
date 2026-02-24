@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 import { Toaster } from "@/components/ui/sonner";
+import { VersionDisplay } from "@/components/VersionDisplay";
 
 export const metadata: Metadata = {
   title: "MaintenanceApp",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <div className="min-h-screen bg-background text-foreground">
           {children}
         </div>
+        <VersionDisplay />
         <Toaster position="top-center" />
       </body>
     </html>
