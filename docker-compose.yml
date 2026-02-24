@@ -13,4 +13,5 @@ services:
       - DATABASE_URL=file:/app/data/dev.db
       - AUTH_SECRET=your_auth_secret_here # Change this in your .env
       - AUTH_TRUST_HOST=true
+      - AUTH_URL=https://maint.example.com
     restart: always

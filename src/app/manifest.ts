@@ -6,6 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: 'Maintenance',
         description: 'Track your assets and maintenance schedules',
         start_url: '/',
+        id: '/',
+        scope: '/',
         display: 'standalone',
         background_color: '#09090b',
         theme_color: '#09090b',
