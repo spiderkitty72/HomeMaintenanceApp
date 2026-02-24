@@ -12,8 +12,8 @@ COPY package*.json ./
 RUN npm ci
 
 # Provide a dummy DATABASE_URL for build-time Prisma validation
-ENV DATABASE_URL="file:/app/prisma/dev.db"
-ARG DATABASE_URL="file:/app/prisma/dev.db"
+ENV DATABASE_URL="file:/app/data/dev.db"
+ARG DATABASE_URL="file:/app/data/dev.db"
 
 # Copy source and prisma
 COPY . .
@@ -31,6 +31,9 @@ FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
+
+# Prepare data directory for SQLite
+RUN mkdir -p /app/data && chown node:node /app/data
 
 ENV NODE_ENV=production
 
