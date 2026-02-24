@@ -89,6 +89,24 @@ The app is configured to use **bind mounts** for data persistence. This ensures 
 > [!NOTE]
 > Ensure the `./data` and `./public/uploads` directories exist on your host machine to avoid permission issues when the container starts.
 
+## 🔒 Reverse Proxy & Security
+
+If you are running this app behind a reverse proxy (Nginx, Caddy, etc.):
+
+1.  **Trust Headers**: The app is already configured with `AUTH_TRUST_HOST=true` in `docker-compose.yml`.
+2.  **Public URL**: Set the `AUTH_URL` environment variable to your public address (e.g., `https://maintenance.example.com`).
+3.  **Proxy Configuration**: Ensure your proxy passes `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Forwarded-Host` headers.
+
+### Nginx Example
+```nginx
+location / {
+    proxy_pass http://localhost:3030;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
 ## 📄 License
 
 Check individual file headers or the license file for details.
