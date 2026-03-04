@@ -8,8 +8,8 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-# npm ci is faster and more reliable than npm install
-RUN npm ci
+# npm ci is faster, but we need --legacy-peer-deps for next-auth/nodemailer
+RUN npm ci --legacy-peer-deps
 
 # Provide a dummy DATABASE_URL for build-time Prisma validation
 ENV DATABASE_URL="file:/app/data/dev.db"
