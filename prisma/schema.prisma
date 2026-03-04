@@ -110,6 +110,8 @@ model Asset {
   trackingMethod String   // Mileage, Hours, DateOnly
   details        String?  // JSON for flexible fields (VIN, Address, etc)
   currentUsage   Float    @default(0)
+  usageUpdatedAt DateTime @default(now())
+  dailyUsage     Float    @default(0)
   image          String?
   
   createdAt      DateTime @default(now())

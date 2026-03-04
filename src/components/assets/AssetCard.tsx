@@ -12,6 +12,7 @@ import { AddServiceDialog } from "@/components/service/AddServiceDialog";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import Image from "next/image";
 import Link from "next/link";
+import { differenceInDays } from "date-fns";
 
 interface AssetCardProps {
     asset: any;
@@ -114,7 +115,7 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                     </div>
                 </div>
 
-                <div className="mt-auto flex justify-between items-end pb-4">
+                <div className="mt-auto flex justify-between items-end pb-4 pointer-events-auto">
                     <div className="space-y-1 text-foreground">
                         <p className="text-3xl font-bold tracking-tight">
                             {asset.currentUsage.toLocaleString()}
@@ -122,7 +123,19 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                                 {asset.trackingMethod === TRACKING_METHODS.MILEAGE ? "mi" : asset.trackingMethod === TRACKING_METHODS.HOURS ? "hrs" : ""}
                             </span>
                         </p>
-                        <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest">Current Usage</p>
+                        <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest leading-none mb-1">Current Usage</p>
+
+                        {asset.dailyUsage > 0 && asset.usageUpdatedAt && (
+                            <div className="mt-1 flex flex-col pt-1">
+                                <p className="text-sm font-semibold tracking-tight text-primary/80">
+                                    {Math.round(asset.currentUsage + (asset.dailyUsage * Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt))))).toLocaleString()}
+                                    <span className="text-[10px] font-normal opacity-70 ml-1 uppercase">EST</span>
+                                </p>
+                                <p className="text-[9px] opacity-60 uppercase tracking-widest leading-none mt-0.5">
+                                    {Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt)))} Days Since Update
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

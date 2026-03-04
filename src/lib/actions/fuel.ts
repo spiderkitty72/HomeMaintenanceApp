@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshPredictions } from "./schedules";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { recalculateAssetUsage } from "./usage";
 
 const FuelRecordSchema = z.object({
     assetId: z.string(),
@@ -50,10 +51,7 @@ export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
         }
 
         // Update asset current usage
-        await tx.asset.update({
-            where: { id: data.assetId },
-            data: { currentUsage: data.usageAtFill },
-        });
+        await recalculateAssetUsage(tx as any, data.assetId);
 
         return fuelRecord;
     });
@@ -210,18 +208,8 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
             }
         }
 
-        // Update asset usage if this is the newest record
-        const latestRecord = await tx.fuelRecord.findFirst({
-            where: { assetId: existing.assetId },
-            orderBy: { usageAtFill: "desc" },
-        });
-
-        if (latestRecord && latestRecord.usageAtFill > existing.asset.currentUsage) {
-            await tx.asset.update({
-                where: { id: existing.assetId },
-                data: { currentUsage: latestRecord.usageAtFill },
-            });
-        }
+        // Update asset usage
+        await recalculateAssetUsage(tx as any, existing.assetId);
 
         return updated;
     });
@@ -253,8 +241,12 @@ export async function deleteFuelRecord(id: string) {
         throw new Error("Unauthorized to delete this record");
     }
 
-    await prisma.fuelRecord.delete({
-        where: { id },
+    await prisma.$transaction(async (tx) => {
+        await tx.fuelRecord.delete({
+            where: { id },
+        });
+
+        await recalculateAssetUsage(tx as any, existing.assetId);
     });
 
     revalidatePath(`/dashboard/asset/${existing.assetId}`);
