@@ -287,3 +287,10 @@ model Attachment {
   fuelRecord      FuelRecord?    @relation(fields: [fuelRecordId], references: [id], onDelete: Cascade)
   partPurchase    PartPurchase?  @relation(fields: [partPurchaseId], references: [id], onDelete: Cascade)
 }
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // JSON string
+  updatedAt DateTime @updatedAt
+}
