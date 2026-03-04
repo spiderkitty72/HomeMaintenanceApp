@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createDatabaseBackup, exportDatabaseJSON, importDatabaseJSON } from "@/lib/actions/db";
+import { AdminEmailSettings } from "@/components/admin/AdminEmailSettings";
 
 export function AdminSystemTab() {
     const [isBackingUp, setIsBackingUp] = useState(false);
@@ -187,6 +188,10 @@ export function AdminSystemTab() {
                     </div>
                 </CardContent>
             </Card>
+
+            <div className="md:col-span-2">
+                <AdminEmailSettings />
+            </div>
 
             <Card className="md:col-span-2 border-green-200 bg-green-50/10">
                 <CardHeader className="pb-3">
