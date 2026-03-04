@@ -1,27 +1,10 @@
 "use server";
 
-import { getSystemSetting } from "./settings";
-import nodemailer from "nodemailer";
+import { getSmtpTransport } from "../email";
 
 export async function testSmtpConnection(testEmailAddress: string) {
     try {
-        // 1. Get the SMTP settings from the database
-        const smtpSettings = await getSystemSetting("smtp_config");
-
-        if (!smtpSettings) {
-            throw new Error("SMTP Configuration not found. Please save your settings first.");
-        }
-
-        // 2. Configure NodeMailer Transport
-        const transporter = nodemailer.createTransport({
-            host: smtpSettings.host,
-            port: Number(smtpSettings.port),
-            secure: smtpSettings.secure === "true" || smtpSettings.secure === true,
-            auth: {
-                user: smtpSettings.username,
-                pass: smtpSettings.password,
-            },
-        });
+        const { transporter, smtpSettings } = await getSmtpTransport();
 
         // 3. Send the Test Email
         const info = await transporter.sendMail({
@@ -45,4 +28,10 @@ export async function testSmtpConnection(testEmailAddress: string) {
         console.error("SMTP_TEST_ERROR:", error);
         throw new Error(error.message || "Failed to send test email. Check your SMTP settings and ensure the mail server is accessible.");
     }
+}
+
+import { processServiceReminders } from "../reminders";
+
+export async function triggerManualReminders() {
+    return await processServiceReminders();
 }
