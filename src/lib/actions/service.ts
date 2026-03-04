@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshPredictions } from "./schedules";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { recalculateAssetUsage } from "./usage";
 
 const ServiceRecordSchema = z.object({
     assetId: z.string(),
@@ -60,10 +61,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         }
 
         // Update asset current usage
-        await tx.asset.update({
-            where: { id: data.assetId },
-            data: { currentUsage: data.usageAtService },
-        });
+        await recalculateAssetUsage(tx as any, data.assetId);
 
         // Deduct from inventory
         for (const p of data.parts) {
@@ -243,17 +241,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         }
 
         // Update asset current usage
-        const latestRecord = await tx.serviceRecord.findFirst({
-            where: { assetId: existing.assetId },
-            orderBy: { usageAtService: "desc" },
-        });
-
-        if (latestRecord && latestRecord.usageAtService > existing.asset.currentUsage) {
-            await tx.asset.update({
-                where: { id: existing.assetId },
-                data: { currentUsage: latestRecord.usageAtService },
-            });
-        }
+        await recalculateAssetUsage(tx as any, existing.assetId);
 
         return updated;
     });
@@ -302,6 +290,9 @@ export async function deleteServiceRecord(id: string) {
         await tx.serviceRecord.delete({
             where: { id },
         });
+
+        // Recalculate usage after delete
+        await recalculateAssetUsage(tx as any, existing.assetId);
     });
 
     revalidatePath(`/dashboard/asset/${existing.assetId}`);
