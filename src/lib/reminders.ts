@@ -1,7 +1,8 @@
 import { prisma } from "./prisma";
 import { getSmtpTransport } from "./email";
-import { addDays } from "date-fns";
+import { addDays, differenceInDays } from "date-fns";
 import { isScheduleDue } from "./predictions";
+import { getSystemSetting } from "./actions/settings";
 
 export async function processServiceReminders() {
     try {
@@ -20,6 +21,9 @@ export async function processServiceReminders() {
             }
         });
 
+        const reminderSettings = await getSystemSetting("reminder_schedule");
+        const maxDaysToEstimate = reminderSettings?.maxDaysToEstimate ?? 30;
+
         const targetDate = addDays(new Date(), 7); // Exactly 7 days from now
 
         const emailsToSend: Record<string, {
@@ -29,7 +33,14 @@ export async function processServiceReminders() {
 
         for (const asset of assets) {
             const currentUsage = asset.currentUsage;
-            const dailyUsage = (asset as any).dailyUsage || 0;
+            let dailyUsage = (asset as any).dailyUsage || 0;
+            const usageUpdatedAt = (asset as any).usageUpdatedAt;
+
+            // Stop estimating if the asset hasn't had an update within the max limit
+            if (usageUpdatedAt && differenceInDays(new Date(), new Date(usageUpdatedAt)) > maxDaysToEstimate) {
+                dailyUsage = 0;
+            }
+
             const estimatedUsageIn7Days = currentUsage + (dailyUsage * 7);
 
             const dueSchedules = [];

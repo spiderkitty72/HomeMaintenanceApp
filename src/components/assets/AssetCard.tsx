@@ -22,15 +22,20 @@ interface AssetCardProps {
     asset: any;
     currentUserId?: string;
     onDelete?: (id: string) => void;
+    maxDaysToEstimate?: number;
 }
 
-export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
+export function AssetCard({ asset, currentUserId, onDelete, maxDaysToEstimate = 30 }: AssetCardProps) {
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
     const [showReminders, setShowReminders] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const targetDate = addDays(new Date(), 7);
-    const estimatedUsageIn7Days = asset.currentUsage + ((asset.dailyUsage || 0) * 7);
+    const daysSinceUpdate = asset.usageUpdatedAt ? Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt))) : 0;
+    const isStale = daysSinceUpdate > maxDaysToEstimate;
+
+    const effectiveDailyUsage = isStale ? 0 : (asset.dailyUsage || 0);
+    const estimatedUsageIn7Days = asset.currentUsage + (effectiveDailyUsage * 7);
 
     const dueReminders = asset.schedules?.map((schedule: any) => {
         const { isDue, reason } = isScheduleDue(schedule, targetDate, estimatedUsageIn7Days);
@@ -184,14 +189,14 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                         </p>
                         <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest leading-none mb-1">Current Usage</p>
 
-                        {asset.dailyUsage > 0 && asset.usageUpdatedAt && (
+                        {asset.dailyUsage > 0 && asset.usageUpdatedAt && !isStale && (
                             <div className="mt-1 flex flex-col pt-1">
                                 <p className="text-sm font-semibold tracking-tight text-primary/80">
-                                    {Math.round(asset.currentUsage + (asset.dailyUsage * Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt))))).toLocaleString()}
+                                    {Math.round(asset.currentUsage + (asset.dailyUsage * daysSinceUpdate)).toLocaleString()}
                                     <span className="text-[10px] font-normal opacity-70 ml-1 uppercase">EST</span>
                                 </p>
                                 <p className="text-[9px] opacity-60 uppercase tracking-widest leading-none mt-0.5">
-                                    {Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt)))} Days Since Update
+                                    {daysSinceUpdate} Days Since Update
                                 </p>
                             </div>
                         )}
