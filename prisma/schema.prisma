@@ -269,6 +269,7 @@ model ServiceSchedule {
   
   nextDueDate    DateTime?
   nextDueUsage   Float?
+  isReminderDismissed Boolean @default(false)
   
   asset          Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }

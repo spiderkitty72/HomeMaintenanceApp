@@ -77,6 +77,7 @@ export async function getAssets() {
                     },
                 },
             },
+            schedules: true,
         },
         orderBy: {
             createdAt: "desc",

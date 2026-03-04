@@ -22,6 +22,7 @@ const ServiceRecordSchema = z.object({
         quantity: z.number(),
         costPerUnit: z.number(),
     })),
+    fulfilledScheduleIds: z.array(z.string()).optional(),
 });
 
 export async function createServiceRecord(data: z.infer<typeof ServiceRecordSchema>) {
@@ -73,6 +74,20 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                     },
                 },
             });
+        }
+
+        // Fulfill explicitly chosen schedules
+        if (data.fulfilledScheduleIds && data.fulfilledScheduleIds.length > 0) {
+            for (const scheduleId of data.fulfilledScheduleIds) {
+                await (tx as any).serviceSchedule.update({
+                    where: { id: scheduleId },
+                    data: {
+                        lastPerformedDate: data.date,
+                        lastPerformedUsage: data.usageAtService,
+                        isReminderDismissed: false,
+                    }
+                });
+            }
         }
 
         return serviceRecord;

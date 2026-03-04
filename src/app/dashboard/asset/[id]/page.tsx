@@ -92,7 +92,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         trackingMethod={asset.trackingMethod}
                         lastUsage={asset.currentUsage}
                     />
-                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} />
+                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} schedules={schedules} />
                     <Button variant="outline" size="sm">
                         <Settings className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">Settings</span>
