@@ -38,6 +38,7 @@ const reminderSchema = z.object({
     enabled: z.boolean(),
     dayOfWeek: z.string(),
     time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
+    maxDaysToEstimate: z.coerce.number().min(0, "Must be positive"),
 });
 
 export function AdminEmailSettings() {
@@ -59,11 +60,12 @@ export function AdminEmailSettings() {
     });
 
     const reminderForm = useForm<z.infer<typeof reminderSchema>>({
-        resolver: zodResolver(reminderSchema),
+        resolver: zodResolver(reminderSchema) as any,
         defaultValues: {
             enabled: false,
             dayOfWeek: "1",
             time: "08:00",
+            maxDaysToEstimate: 30,
         },
     });
 
@@ -88,6 +90,7 @@ export function AdminEmailSettings() {
                         enabled: reminderSettings.enabled === true || String(reminderSettings.enabled) === "true",
                         dayOfWeek: reminderSettings.dayOfWeek?.toString() || "1",
                         time: reminderSettings.time || "08:00",
+                        maxDaysToEstimate: reminderSettings.maxDaysToEstimate ?? 30,
                     });
                 }
             } catch (error) {
@@ -335,7 +338,7 @@ export function AdminEmailSettings() {
                                 )}
                             />
 
-                            <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                                 <FormField
                                     control={reminderForm.control}
                                     name="dayOfWeek"
@@ -369,6 +372,20 @@ export function AdminEmailSettings() {
                                             <FormLabel>Time of Day (HH:MM)</FormLabel>
                                             <FormControl>
                                                 <Input type="time" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={reminderForm.control}
+                                    name="maxDaysToEstimate"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Max Days to Estimate Usage</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="30" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
