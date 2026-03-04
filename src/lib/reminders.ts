@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { getSmtpTransport } from "./email";
 import { addDays } from "date-fns";
+import { isScheduleDue } from "./predictions";
 
 export async function processServiceReminders() {
     try {
@@ -34,18 +35,7 @@ export async function processServiceReminders() {
             const dueSchedules = [];
 
             for (const schedule of asset.schedules) {
-                let isDue = false;
-                let reason = "";
-
-                if (schedule.nextDueDate && schedule.nextDueDate <= targetDate) {
-                    isDue = true;
-                    reason = `Due by Date: ${schedule.nextDueDate.toLocaleDateString()}`;
-                }
-
-                if (schedule.nextDueUsage && schedule.nextDueUsage <= estimatedUsageIn7Days) {
-                    isDue = true;
-                    reason += (reason ? " and " : "") + `Due by Usage: ${schedule.nextDueUsage} (Estimated hit within 7 days)`;
-                }
+                const { isDue, reason } = isScheduleDue(schedule, targetDate, estimatedUsageIn7Days);
 
                 if (isDue) {
                     dueSchedules.push({

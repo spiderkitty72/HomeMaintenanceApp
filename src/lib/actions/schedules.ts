@@ -96,3 +96,17 @@ export async function deleteSchedule(id: string, assetId: string) {
 
     revalidatePath(`/dashboard/asset/${assetId}`);
 }
+
+export async function dismissReminder(id: string, assetId: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("EDIT", "SERVICE");
+
+    await (prisma.serviceSchedule as any).update({
+        where: { id },
+        data: { isReminderDismissed: true },
+    });
+
+    revalidatePath(`/dashboard/asset/${assetId}`);
+}

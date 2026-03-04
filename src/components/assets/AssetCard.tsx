@@ -12,7 +12,11 @@ import { AddServiceDialog } from "@/components/service/AddServiceDialog";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import Image from "next/image";
 import Link from "next/link";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, addDays } from "date-fns";
+import { useState, useTransition } from "react";
+import { isScheduleDue } from "@/lib/predictions";
+import { dismissReminder } from "@/lib/actions/schedules";
+import { Bell } from "lucide-react";
 
 interface AssetCardProps {
     asset: any;
@@ -22,6 +26,16 @@ interface AssetCardProps {
 
 export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
+    const [showReminders, setShowReminders] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
+    const targetDate = addDays(new Date(), 7);
+    const estimatedUsageIn7Days = asset.currentUsage + ((asset.dailyUsage || 0) * 7);
+
+    const dueReminders = asset.schedules?.map((schedule: any) => {
+        const { isDue, reason } = isScheduleDue(schedule, targetDate, estimatedUsageIn7Days);
+        return isDue ? { ...schedule, reason } : null;
+    }).filter(Boolean) || [];
 
     return (
         <div className="relative group overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all h-[240px]">
@@ -53,8 +67,21 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
             <div className="relative z-20 flex flex-col h-full p-4 pointer-events-none">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
-                            <Icon className="h-4 w-4 text-primary" />
+                        <div className="relative">
+                            <div className="p-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
+                                <Icon className="h-4 w-4 text-primary" />
+                            </div>
+                            {dueReminders.length > 0 && (
+                                <div
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 cursor-pointer pointer-events-auto hover:bg-red-600 transition-colors shadow-sm ring-2 ring-background z-30"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowReminders(!showReminders);
+                                    }}
+                                >
+                                    <Bell className="h-3 w-3 animate-pulse" />
+                                </div>
+                            )}
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -115,7 +142,39 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                     </div>
                 </div>
 
-                <div className="mt-auto flex justify-between items-end pb-4 pointer-events-auto">
+                <div className="mt-auto flex justify-between items-end pb-4 pointer-events-auto relative">
+                    {showReminders && dueReminders.length > 0 && (
+                        <div className="absolute bottom-full mb-2 right-0 left-0 bg-popover text-popover-foreground border shadow-lg rounded-lg p-3 z-50 pointer-events-auto">
+                            <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                <Bell className="h-3.5 w-3.5 text-red-500" /> Reminders Due
+                            </h4>
+                            <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                                {dueReminders.map((reminder: any) => (
+                                    <div key={reminder.id} className="bg-muted p-2 rounded text-xs flex justify-between items-center gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate">{reminder.name}</p>
+                                            <p className="opacity-70 truncate" title={reminder.reason}>{reminder.reason}</p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 text-[10px] px-2 shrink-0"
+                                            disabled={isPending}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                startTransition(() => {
+                                                    dismissReminder(reminder.id, asset.id);
+                                                });
+                                            }}
+                                        >
+                                            Dismiss
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-1 text-foreground">
                         <p className="text-3xl font-bold tracking-tight">
                             {asset.currentUsage.toLocaleString()}
@@ -161,6 +220,7 @@ export function AssetCard({ asset, currentUserId, onDelete }: AssetCardProps) {
                         <AddServiceDialog
                             assetId={asset.id}
                             trackingMethod={asset.trackingMethod}
+                            schedules={asset.schedules}
                             trigger={
                                 <Button variant="secondary" size="sm" className="w-full h-9 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-none shadow-none text-xs gap-1.5 font-semibold">
                                     <Wrench className="h-3.5 w-3.5" />

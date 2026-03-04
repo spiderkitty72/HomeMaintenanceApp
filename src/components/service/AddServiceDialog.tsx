@@ -9,12 +9,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Image as ImageIcon, Wrench } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Wrench, Bell } from "lucide-react";
 import { createServiceRecord, updateServiceRecord } from "@/lib/actions/service";
 import { getCompatibleParts } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/common/ImageUpload";
+import { Checkbox } from "@/components/ui/checkbox";
+import { isScheduleDue } from "@/lib/predictions";
 
 const serviceSchema = z.object({
     date: z.string(),
@@ -29,6 +31,7 @@ const serviceSchema = z.object({
         quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0"),
         costPerUnit: z.coerce.number().min(0),
     })),
+    fulfilledScheduleIds: z.array(z.string()).optional(),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
@@ -38,9 +41,10 @@ interface AddServiceDialogProps {
     trackingMethod: string;
     trigger?: React.ReactNode;
     serviceRecord?: any; // Existing record for editing
+    schedules?: any[]; // For explicitly fulfilling reminders
 }
 
-export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceRecord }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceRecord, schedules }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
     const isEditing = !!serviceRecord;
@@ -60,6 +64,7 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
                 costPerUnit: p.costPerUnit,
             })) || [],
             image: serviceRecord?.attachments?.[0]?.url ?? "",
+            fulfilledScheduleIds: [],
         },
     });
 
@@ -116,6 +121,15 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
         form.setValue("parts", currentParts.filter((_, i) => i !== index));
     };
 
+    const dateStr = form.watch("date");
+    const usageStr = form.watch("usageAtService");
+
+    // Dynamically calculate what is explicitly due based on the inputs typed in the modal so far
+    const activeReminders = schedules?.map((schedule: any) => {
+        const { isDue, reason } = isScheduleDue(schedule, new Date(dateStr || new Date()), Number(usageStr || 0));
+        return isDue ? { ...schedule, reason } : null;
+    }).filter(Boolean) || [];
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -160,6 +174,53 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
                                 )}
                             />
                         </div>
+
+                        {activeReminders.length > 0 && !isEditing && (
+                            <div className="p-4 bg-muted/30 border rounded-lg space-y-3">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
+                                    <Bell className="h-4 w-4 text-primary" /> Fulfill Active Reminders
+                                </h4>
+                                <p className="text-xs text-muted-foreground leading-tight">
+                                    Select the service schedules this record fulfills to update their next due dates automatically.
+                                </p>
+                                <div className="space-y-2">
+                                    {activeReminders.map((reminder: any) => (
+                                        <FormField
+                                            key={reminder.id}
+                                            control={form.control}
+                                            name="fulfilledScheduleIds"
+                                            render={({ field }) => {
+                                                const checked = field.value?.includes(reminder.id);
+                                                return (
+                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 bg-background">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={checked}
+                                                                onCheckedChange={(isChecked: boolean) => {
+                                                                    const current = field.value || [];
+                                                                    const updated = isChecked
+                                                                        ? [...current, reminder.id]
+                                                                        : current.filter((id: string) => id !== reminder.id);
+                                                                    field.onChange(updated);
+                                                                }}
+                                                            />
+                                                        </FormControl>
+                                                        <div className="space-y-1 leading-none">
+                                                            <FormLabel className="font-medium cursor-pointer">
+                                                                {reminder.name}
+                                                            </FormLabel>
+                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                {reminder.reason}
+                                                            </p>
+                                                        </div>
+                                                    </FormItem>
+                                                )
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <FormField
                             control={form.control}

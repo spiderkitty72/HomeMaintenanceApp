@@ -48,3 +48,32 @@ export function predictNextDueDate(
 
     return addDays(new Date(), Math.round(daysRemaining));
 }
+
+/**
+ * Evaluates whether a schedule is currently due based on a target date and estimated usage,
+ * and whether it has already been dismissed by the user.
+ */
+export function isScheduleDue(
+    schedule: any, // Use any to temporarily bypass Prisma client type lag for new columns
+    targetDate: Date,
+    estimatedUsage: number
+): { isDue: boolean; reason: string } {
+    if (schedule.isReminderDismissed) {
+        return { isDue: false, reason: "" };
+    }
+
+    let isDue = false;
+    let reason = "";
+
+    if (schedule.nextDueDate && new Date(schedule.nextDueDate) <= targetDate) {
+        isDue = true;
+        reason = `Due by Date: ${new Date(schedule.nextDueDate).toLocaleDateString()}`;
+    }
+
+    if (schedule.nextDueUsage && schedule.nextDueUsage <= estimatedUsage) {
+        isDue = true;
+        reason += (reason ? " and " : "") + `Due by Usage: ${schedule.nextDueUsage}`;
+    }
+
+    return { isDue, reason };
+}
