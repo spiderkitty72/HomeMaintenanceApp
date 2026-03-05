@@ -7,6 +7,7 @@ import { z } from "zod";
 import { refreshPredictions } from "./schedules";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
+import { addDays } from "date-fns";
 
 const ServiceRecordSchema = z.object({
     assetId: z.string(),
@@ -84,6 +85,9 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                     const nextDueUsage = schedule.frequencyType !== "Date"
                         ? (data.usageAtService + schedule.frequencyValue)
                         : null;
+                    const nextDueDate = schedule.frequencyType === "Date"
+                        ? addDays(new Date(data.date), schedule.frequencyValue)
+                        : null;
 
                     await (tx as any).serviceSchedule.update({
                         where: { id: scheduleId },
@@ -92,6 +96,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                             lastPerformedUsage: data.usageAtService,
                             isReminderDismissed: false,
                             ...(nextDueUsage !== null ? { nextDueUsage } : {}),
+                            ...(nextDueDate !== null ? { nextDueDate } : {}),
                         }
                     });
                 }
@@ -277,6 +282,9 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                     const nextDueUsage = schedule.frequencyType !== "Date"
                         ? (serviceData.usageAtService + schedule.frequencyValue)
                         : null;
+                    const nextDueDate = schedule.frequencyType === "Date"
+                        ? addDays(new Date(serviceData.date), schedule.frequencyValue)
+                        : null;
 
                     await (tx as any).serviceSchedule.update({
                         where: { id: scheduleId },
@@ -285,6 +293,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                             lastPerformedUsage: serviceData.usageAtService,
                             isReminderDismissed: false,
                             ...(nextDueUsage !== null ? { nextDueUsage } : {}),
+                            ...(nextDueDate !== null ? { nextDueDate } : {}),
                         }
                     });
                 }
