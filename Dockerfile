@@ -15,12 +15,11 @@ RUN npm ci --legacy-peer-deps
 ENV DATABASE_URL="file:/app/data/dev.db"
 ARG DATABASE_URL="file:/app/data/dev.db"
 
-# Increment version during build
-COPY increment-version.js ./
-RUN node increment-version.js
-
 # Copy source and prisma
 COPY . .
+
+# Increment version during build
+RUN node increment-version.js
 
 # Generate Prisma client
 RUN npx prisma generate
