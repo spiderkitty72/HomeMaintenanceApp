@@ -159,10 +159,10 @@ export function AdminEmailSettings() {
 
     if (isLoading) {
         return (
-            <Card className="border-indigo-200 bg-indigo-50/30">
+            <Card className="border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Mail className="h-5 w-5 text-indigo-600" />
+                        <Mail className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         Email / SMTP Configuration
                     </CardTitle>
                     <CardDescription>Loading settings...</CardDescription>
@@ -172,10 +172,10 @@ export function AdminEmailSettings() {
     }
 
     return (
-        <Card className="border-indigo-200 bg-indigo-50/30">
+        <Card className="border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-indigo-600" />
+                    <Mail className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     Email / SMTP Configuration
                 </CardTitle>
                 <CardDescription>
@@ -255,7 +255,7 @@ export function AdminEmailSettings() {
                                 control={form.control}
                                 name="secure"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-indigo-100 bg-white p-3 md:col-span-2 shadow-sm">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-indigo-100 dark:border-indigo-800 bg-white dark:bg-slate-900 p-3 md:col-span-2 shadow-sm">
                                         <div className="space-y-0.5">
                                             <FormLabel>Use Secure Connection (SSL/TLS)</FormLabel>
                                             <CardDescription className="text-xs">
@@ -281,8 +281,8 @@ export function AdminEmailSettings() {
                     </form>
                 </Form>
 
-                <div className="pt-6 border-t border-indigo-100 mt-6">
-                    <h3 className="text-sm font-medium mb-3 text-indigo-900">Test Connection</h3>
+                <div className="pt-6 border-t border-indigo-100 dark:border-indigo-800 mt-6">
+                    <h3 className="text-sm font-medium mb-3 text-indigo-900 dark:text-indigo-100">Test Connection</h3>
                     <div className="flex gap-2 max-w-md">
                         <Input
                             placeholder="Email address to send test to..."
@@ -293,7 +293,7 @@ export function AdminEmailSettings() {
                             variant="secondary"
                             onClick={handleTestEmail}
                             disabled={isTesting}
-                            className="bg-white border hover:bg-indigo-50 border-indigo-200 text-indigo-700 whitespace-nowrap"
+                            className="bg-white dark:bg-slate-900 border hover:bg-indigo-50 dark:hover:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 whitespace-nowrap"
                         >
                             {isTesting ? (
                                 "Sending..."
@@ -307,8 +307,8 @@ export function AdminEmailSettings() {
                     </div>
                 </div>
 
-                <div className="pt-8 border-t border-indigo-100 mt-8">
-                    <h3 className="text-lg font-medium mb-1 text-indigo-900 flex items-center gap-2">
+                <div className="pt-8 border-t border-indigo-100 dark:border-indigo-800 mt-8">
+                    <h3 className="text-lg font-medium mb-1 text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
                         <Mail className="h-4 w-4" /> Automated Reminders Setup
                     </h3>
                     <p className="text-sm text-muted-foreground mb-6">
@@ -316,15 +316,15 @@ export function AdminEmailSettings() {
                     </p>
 
                     <Form {...reminderForm}>
-                        <form onSubmit={reminderForm.handleSubmit(onReminderSubmit)} className="space-y-4 max-w-2xl bg-white p-5 rounded-lg border border-indigo-100 shadow-sm">
+                        <form onSubmit={reminderForm.handleSubmit(onReminderSubmit)} className="space-y-4 max-w-2xl bg-white dark:bg-slate-900 p-5 rounded-lg border border-indigo-100 dark:border-indigo-800 shadow-sm">
                             <FormField
                                 control={reminderForm.control}
                                 name="enabled"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-indigo-50 p-3 bg-indigo-50/20">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-indigo-50 dark:border-indigo-900/50 p-3 bg-indigo-50/20 dark:bg-indigo-950/20">
                                         <div className="space-y-0.5">
-                                            <FormLabel className="text-indigo-900">Enable Automated Reminders</FormLabel>
-                                            <CardDescription className="text-xs text-indigo-700">
+                                            <FormLabel className="text-indigo-900 dark:text-indigo-100">Enable Automated Reminders</FormLabel>
+                                            <CardDescription className="text-xs text-indigo-700 dark:text-indigo-300">
                                                 Turn the background scheduling loop on or off.
                                             </CardDescription>
                                         </div>
@@ -393,7 +393,7 @@ export function AdminEmailSettings() {
                                 />
                             </div>
 
-                            <div className="flex justify-between pt-4 mt-2 border-t border-indigo-50 items-center">
+                            <div className="flex justify-between pt-4 mt-2 border-t border-indigo-50 dark:border-indigo-800 items-center">
                                 <Button
                                     type="button"
                                     variant="outline"
