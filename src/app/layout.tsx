@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "MaintenanceApp",
   description: "Track your assets and maintenance schedules",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
