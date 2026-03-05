@@ -79,14 +79,22 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         // Fulfill explicitly chosen schedules
         if (data.fulfilledScheduleIds && data.fulfilledScheduleIds.length > 0) {
             for (const scheduleId of data.fulfilledScheduleIds) {
-                await (tx as any).serviceSchedule.update({
-                    where: { id: scheduleId },
-                    data: {
-                        lastPerformedDate: data.date,
-                        lastPerformedUsage: data.usageAtService,
-                        isReminderDismissed: false,
-                    }
-                });
+                const schedule = await (tx as any).serviceSchedule.findUnique({ where: { id: scheduleId } });
+                if (schedule) {
+                    const nextDueUsage = schedule.frequencyType !== "Date"
+                        ? (data.usageAtService + schedule.frequencyValue)
+                        : null;
+
+                    await (tx as any).serviceSchedule.update({
+                        where: { id: scheduleId },
+                        data: {
+                            lastPerformedDate: data.date,
+                            lastPerformedUsage: data.usageAtService,
+                            isReminderDismissed: false,
+                            ...(nextDueUsage !== null ? { nextDueUsage } : {}),
+                        }
+                    });
+                }
             }
         }
 
@@ -264,14 +272,22 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         // Fulfill explicitly chosen schedules during edit
         if (fulfilledScheduleIds && fulfilledScheduleIds.length > 0) {
             for (const scheduleId of fulfilledScheduleIds) {
-                await (tx as any).serviceSchedule.update({
-                    where: { id: scheduleId },
-                    data: {
-                        lastPerformedDate: new Date(serviceData.date),
-                        lastPerformedUsage: serviceData.usageAtService,
-                        isReminderDismissed: false,
-                    }
-                });
+                const schedule = await (tx as any).serviceSchedule.findUnique({ where: { id: scheduleId } });
+                if (schedule) {
+                    const nextDueUsage = schedule.frequencyType !== "Date"
+                        ? (serviceData.usageAtService + schedule.frequencyValue)
+                        : null;
+
+                    await (tx as any).serviceSchedule.update({
+                        where: { id: scheduleId },
+                        data: {
+                            lastPerformedDate: new Date(serviceData.date),
+                            lastPerformedUsage: serviceData.usageAtService,
+                            isReminderDismissed: false,
+                            ...(nextDueUsage !== null ? { nextDueUsage } : {}),
+                        }
+                    });
+                }
             }
         }
 
