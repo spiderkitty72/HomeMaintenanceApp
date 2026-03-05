@@ -1,16 +1,6 @@
-<<<<<<< HEAD
 <svg width="192" height="192" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="100" fill="#09090b"/>
-  <!-- Classic Pickup Truck Silhouette -->
-  <g fill="white">
-    <path d="M 70,310 L 70,240 C 70,230 75,225 85,225 L 210,225 L 210,150 C 210,130 225,120 245,120 L 310,120 C 330,120 345,130 355,150 L 385,225 L 430,225 C 440,225 445,235 445,245 L 445,310 C 445,320 440,330 430,330 L 80,330 C 75,330 70,325 70,310 Z" />
-    <circle cx="140" cy="330" r="40" />
-    <circle cx="380" cy="330" r="40" />
+  <g transform="translate(100, 100) scale(13)">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
   </g>
-=======
-<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="192" height="192" rx="40" fill="#09090b"/>
-  <path d="M96 50V142M50 96H142" stroke="#3b82f6" stroke-width="20" stroke-linecap="round"/>
-  <circle cx="96" cy="96" r="30" stroke="white" stroke-width="8"/>
->>>>>>> PWA
 </svg>
