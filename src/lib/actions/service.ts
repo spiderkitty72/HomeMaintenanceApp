@@ -130,7 +130,11 @@ export async function getServiceRecord(id: string) {
     return await prisma.serviceRecord.findUnique({
         where: { id },
         include: {
-            asset: true,
+            asset: {
+                include: {
+                    schedules: true,
+                },
+            },
             parts: {
                 include: {
                     part: true,
@@ -152,6 +156,8 @@ export async function getAllServiceRecordsSystem() {
             asset: {
                 select: {
                     name: true,
+                    trackingMethod: true,
+                    schedules: true,
                     owner: {
                         select: {
                             name: true,
@@ -192,7 +198,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         throw new Error("Unauthorized to update this record");
     }
 
-    const { image, parts, ...serviceData } = data;
+    const { image, parts, fulfilledScheduleIds, ...serviceData } = data;
 
     const result = await prisma.$transaction(async (tx) => {
         // 1. Revert current inventory changes
@@ -251,6 +257,20 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                         fileType: "IMAGE",
                         serviceRecordId: id,
                     },
+                });
+            }
+        }
+
+        // Fulfill explicitly chosen schedules during edit
+        if (fulfilledScheduleIds && fulfilledScheduleIds.length > 0) {
+            for (const scheduleId of fulfilledScheduleIds) {
+                await (tx as any).serviceSchedule.update({
+                    where: { id: scheduleId },
+                    data: {
+                        lastPerformedDate: new Date(serviceData.date),
+                        lastPerformedUsage: serviceData.usageAtService,
+                        isReminderDismissed: false,
+                    }
                 });
             }
         }

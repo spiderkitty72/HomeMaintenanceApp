@@ -83,6 +83,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                 <AddServiceDialog
                                     assetId={record.assetId}
                                     trackingMethod={record.asset.trackingMethod}
+                                    schedules={record.asset.schedules as any}
                                     serviceRecord={record}
                                     trigger={
                                         <Button variant="outline" size="sm" className="gap-2">

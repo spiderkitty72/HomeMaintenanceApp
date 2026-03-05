@@ -95,6 +95,7 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
                 ...values,
                 assetId,
                 date: new Date(values.date),
+                fulfilledScheduleIds: values.fulfilledScheduleIds || [],
             };
 
             if (isEditing && serviceRecord) {
@@ -124,11 +125,11 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
     const dateStr = form.watch("date");
     const usageStr = form.watch("usageAtService");
 
-    // Dynamically calculate what is explicitly due based on the inputs typed in the modal so far
-    const activeReminders = schedules?.map((schedule: any) => {
+    // Dynamically calculate the due status of all schedules based on the inputs typed in the modal
+    const processedSchedules = schedules?.map((schedule: any) => {
         const { isDue, reason } = isScheduleDue(schedule, new Date(dateStr || new Date()), Number(usageStr || 0));
-        return isDue ? { ...schedule, reason } : null;
-    }).filter(Boolean) || [];
+        return { ...schedule, isDue, reason };
+    }).sort((a: any, b: any) => (a.isDue === b.isDue ? 0 : a.isDue ? -1 : 1)) || [];
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -175,42 +176,47 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
                             />
                         </div>
 
-                        {activeReminders.length > 0 && !isEditing && (
+                        {processedSchedules.length > 0 && (
                             <div className="p-4 bg-muted/30 border rounded-lg space-y-3">
                                 <h4 className="font-medium text-sm flex items-center gap-2">
-                                    <Bell className="h-4 w-4 text-primary" /> Fulfill Active Reminders
+                                    <Bell className="h-4 w-4 text-primary" /> Fulfill Service Schedules
                                 </h4>
                                 <p className="text-xs text-muted-foreground leading-tight">
-                                    Select the service schedules this record fulfills to update their next due dates automatically.
+                                    Select the service schedules this record fulfills to automatically restart their next due interval.
                                 </p>
-                                <div className="space-y-2">
-                                    {activeReminders.map((reminder: any) => (
+                                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2">
+                                    {processedSchedules.map((schedule: any) => (
                                         <FormField
-                                            key={reminder.id}
+                                            key={schedule.id}
                                             control={form.control}
                                             name="fulfilledScheduleIds"
                                             render={({ field }) => {
-                                                const checked = field.value?.includes(reminder.id);
+                                                const checked = field.value?.includes(schedule.id);
                                                 return (
-                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 bg-background">
+                                                    <FormItem className={`flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 ${schedule.isDue ? 'bg-red-50/10 border-red-100' : 'bg-background'}`}>
                                                         <FormControl>
                                                             <Checkbox
                                                                 checked={checked}
                                                                 onCheckedChange={(isChecked: boolean) => {
                                                                     const current = field.value || [];
                                                                     const updated = isChecked
-                                                                        ? [...current, reminder.id]
-                                                                        : current.filter((id: string) => id !== reminder.id);
+                                                                        ? [...current, schedule.id]
+                                                                        : current.filter((id: string) => id !== schedule.id);
                                                                     field.onChange(updated);
                                                                 }}
                                                             />
                                                         </FormControl>
                                                         <div className="space-y-1 leading-none">
-                                                            <FormLabel className="font-medium cursor-pointer">
-                                                                {reminder.name}
+                                                            <FormLabel className="font-medium cursor-pointer flex items-center gap-2">
+                                                                {schedule.name}
+                                                                {schedule.isDue && <span className="text-[10px] text-destructive font-bold px-1.5 py-0.5 rounded-sm bg-red-100 uppercase tracking-wider">Due</span>}
                                                             </FormLabel>
                                                             <p className="text-xs text-muted-foreground mt-1">
-                                                                {reminder.reason}
+                                                                {schedule.isDue ? (
+                                                                    <span className="text-destructive font-medium">{schedule.reason}</span>
+                                                                ) : (
+                                                                    <span>Every {schedule.frequencyValue} {schedule.frequencyType === "Date" ? "days" : trackingMethod === "Mileage" ? "miles" : "hours"}</span>
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </FormItem>

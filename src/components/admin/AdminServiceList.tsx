@@ -114,6 +114,7 @@ export function AdminServiceList({ records }: AdminServiceListProps) {
                                         <AddServiceDialog
                                             assetId={record.assetId}
                                             trackingMethod={record.asset.trackingMethod}
+                                            schedules={record.asset.schedules}
                                             serviceRecord={record}
                                             trigger={
                                                 <Button size="icon" variant="ghost" className="h-8 w-8" title="Edit Record">
