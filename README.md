@@ -1,5 +1,8 @@
 # Maintenance App
 
+WARNING:
+This project is 99% Vibe Coded. This is a personal project and the intent is not to make this useful for everyone and every application. The intent is a simple to use web based application that I can run on my server in docker to track maintenance on my home, vechicles and utility equipment.
+
 A comprehensive maintenance tracking system designed to help you manage assets (vehicles, equipment, property), track service history, monitor fuel usage, and stay on top of maintenance schedules.
 
 ## 🚀 Key Features
