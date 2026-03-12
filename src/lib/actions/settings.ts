@@ -5,7 +5,13 @@ import { auth } from "@/auth";
 
 export async function getSystemSetting(key: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    const role = (session.user as any).role;
+    // Allow non-admins to read safe UI configurations, restrict secrets to ADMIN
+    if (role !== "ADMIN" && key !== "reminder_schedule") {
         throw new Error("Unauthorized");
     }
 

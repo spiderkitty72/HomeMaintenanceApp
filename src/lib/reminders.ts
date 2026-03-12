@@ -2,7 +2,6 @@ import { prisma } from "./prisma";
 import { getSmtpTransport } from "./email";
 import { addDays, differenceInDays } from "date-fns";
 import { isScheduleDue } from "./predictions";
-import { getSystemSetting } from "./actions/settings";
 
 export async function processServiceReminders() {
     try {
@@ -21,7 +20,16 @@ export async function processServiceReminders() {
             }
         });
 
-        const reminderSettings = await getSystemSetting("reminder_schedule");
+        const settingRecord = await prisma.systemSetting.findUnique({
+            where: { key: "reminder_schedule" }
+        });
+
+        let reminderSettings = null;
+        if (settingRecord) {
+            try { reminderSettings = JSON.parse(settingRecord.value); }
+            catch { reminderSettings = settingRecord.value as any; }
+        }
+
         const maxDaysToEstimate = reminderSettings?.maxDaysToEstimate ?? 30;
 
         const targetDate = addDays(new Date(), 7); // Exactly 7 days from now
