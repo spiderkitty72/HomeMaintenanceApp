@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings } from "lucide-react";
+import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug } from "lucide-react";
 import { MobileNav } from "./MobileNav";
 
 export async function Navbar() {
@@ -23,6 +23,15 @@ export async function Navbar() {
                     <span>Admin</span>
                 </Link>
             )}
+            <a
+                href="https://github.com/spiderkitty72/HomeMaintenanceApp/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+                <Bug className="h-4 w-4 md:hidden" />
+                <span>Report Bug</span>
+            </a>
             <Link href="/dashboard/settings" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
                 <Settings className="h-4 w-4 md:hidden" />
                 <span>Settings</span>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Wrench, Menu, LayoutDashboard, Package, ShieldCheck, LogOut, Settings } from "lucide-react";
+import { Wrench, Menu, LayoutDashboard, Package, ShieldCheck, LogOut, Settings, Bug } from "lucide-react";
 import {
     Sheet,
     SheetContent,
@@ -74,6 +74,16 @@ export function MobileNav({ session }: MobileNavProps) {
                                         <span>Admin</span>
                                     </Link>
                                 )}
+                                <a
+                                    href="https://github.com/spiderkitty72/HomeMaintenanceApp/issues"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    <Bug className="h-4 w-4" />
+                                    <span>Report Bug</span>
+                                </a>
                                 <Link
                                     href="/dashboard/settings"
                                     className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors"
