@@ -15,6 +15,7 @@ A comprehensive maintenance tracking system designed to help you manage assets (
 - **Flexible Permissions**: Robust group-based access control (RBAC) to share assets and manage team collaboration.
 - **Attachment Support**: Upload and link receipts, manuals, or photos directly to records.
 - **Data Export**: Export inventory and records to Excel for external reporting.
+- **Progressive Web App**: Install the app on your device for a native app-like experience.
 
 ## 🛠️ Tech Stack
 
