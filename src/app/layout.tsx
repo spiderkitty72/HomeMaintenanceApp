@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 
 import { Toaster } from "@/components/ui/sonner";
 import { VersionDisplay } from "@/components/VersionDisplay";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "MaintenanceApp",
@@ -47,15 +48,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="min-h-screen bg-background text-foreground">
-          {children}
-        </div>
-        <VersionDisplay />
-        <Toaster position="top-center" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="min-h-screen bg-background text-foreground">
+            {children}
+          </div>
+          <VersionDisplay />
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

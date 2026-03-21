@@ -3,6 +3,7 @@ import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug } from "lucide-react";
 import { MobileNav } from "./MobileNav";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function Navbar() {
     const session = await auth();
@@ -72,6 +73,8 @@ export async function Navbar() {
                             </Link>
                         </div>
                     )}
+
+                    <ThemeToggle />
 
                     {/* Mobile Navigation */}
                     <MobileNav session={session} />

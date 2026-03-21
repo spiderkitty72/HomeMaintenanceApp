@@ -37,8 +37,8 @@ WORKDIR /app
 
 # Prepare data directory for SQLite
 RUN mkdir -p /app/data && chown node:node /app/data
-
 ENV NODE_ENV=production
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 # Copy necessary files from builder
 COPY --from=builder /app/package.json ./
