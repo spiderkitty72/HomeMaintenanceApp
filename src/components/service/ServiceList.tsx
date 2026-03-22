@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { Paperclip, Wrench, ChevronRight, Calculator, Calendar } from "lucide-react";
 import Link from "next/link";
+import { formatHouseUsage } from "@/lib/utils";
 
 interface ServiceRecordWithParts {
     id: string;
@@ -25,10 +26,12 @@ interface ServiceRecordWithParts {
 interface ServiceListProps {
     records: ServiceRecordWithParts[];
     trackingMethod: string;
+    assetType?: string;
 }
 
-export function ServiceList({ records, trackingMethod }: ServiceListProps) {
-    const usageUnit = trackingMethod === "Mileage" ? "mi" : trackingMethod === "Hours" ? "hrs" : "";
+export function ServiceList({ records, trackingMethod, assetType }: ServiceListProps) {
+    const isHouse = assetType === "House";
+    const usageUnit = isHouse ? "" : trackingMethod === "Mileage" ? "mi" : trackingMethod === "Hours" ? "hrs" : "";
 
     if (records.length === 0) {
         return (
@@ -58,7 +61,7 @@ export function ServiceList({ records, trackingMethod }: ServiceListProps) {
                                 </div>
                                 <div className="flex items-center font-medium">
                                     <Calculator className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                                    {record.usageAtService.toLocaleString()} {usageUnit}
+                                    {isHouse ? formatHouseUsage(record.usageAtService) : record.usageAtService.toLocaleString()} {usageUnit}
                                 </div>
                             </div>
 
@@ -100,7 +103,7 @@ export function ServiceList({ records, trackingMethod }: ServiceListProps) {
                                     {format(new Date(record.date), "MMM d, yyyy")}
                                 </TableCell>
                                 <TableCell>
-                                    {record.usageAtService.toLocaleString()} {usageUnit}
+                                    {isHouse ? formatHouseUsage(record.usageAtService) : record.usageAtService.toLocaleString()} {usageUnit}
                                 </TableCell>
                                 <TableCell>
                                     <div>

@@ -250,11 +250,11 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
-                                            name="details.yearBuilt"
+                                            name="details.buildDate"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input placeholder="Year Built" type="number" {...field} value={field.value ?? ""} />
+                                                        <Input type="date" aria-label="Build Date" title="Build Date" {...field} value={field.value ?? ""} />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -301,19 +301,21 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                             )}
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="currentUsage"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Starting Usage (Odometer/Hours)</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        {assetType !== ASSET_TYPES.HOUSE && (
+                            <FormField
+                                control={form.control}
+                                name="currentUsage"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Starting Usage (Odometer/Hours)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         {/* Sharing Section */}
                         <div className="space-y-3 pt-2 border-t">
