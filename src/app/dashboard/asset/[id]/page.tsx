@@ -23,6 +23,7 @@ import { getAssetSpecs } from "@/lib/actions/specs";
 import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getAssets } from "@/lib/actions/assets";
+import { formatHouseUsage } from "@/lib/utils";
 
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -92,7 +93,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         trackingMethod={asset.trackingMethod}
                         lastUsage={asset.currentUsage}
                     />
-                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} schedules={schedules} />
+                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} assetType={asset.type} schedules={schedules} />
                     <Button variant="outline" size="sm">
                         <Settings className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">Settings</span>
@@ -126,7 +127,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                     Current Usage
                                 </div>
                                 <div className="font-bold">
-                                    {asset.currentUsage.toLocaleString()} {asset.trackingMethod === "Mileage" ? "mi" : "hrs"}
+                                    {asset.type === "House" ? formatHouseUsage(asset.currentUsage) : `${asset.currentUsage.toLocaleString()} ${asset.trackingMethod === "Mileage" ? "mi" : "hrs"}`}
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -221,8 +222,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                 <Package className="h-4 w-4 mr-2" /> Parts
                             </TabsTrigger>
                         </TabsList>
-                        <TabsContent value="service">
-                            <ServiceList records={serviceRecords} trackingMethod={asset.trackingMethod} />
+                        <TabsContent value="service" className="mt-6">
+                            <ServiceList records={serviceRecords} trackingMethod={asset.trackingMethod} assetType={asset.type} />
                         </TabsContent>
                         <TabsContent value="fuel">
                             <FuelList records={fuelRecords} trackingMethod={asset.trackingMethod} />

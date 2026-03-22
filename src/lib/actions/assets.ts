@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { AssetType, TrackingMethod } from "@/lib/constants";
+import { ASSET_TYPES, AssetType, TrackingMethod } from "@/lib/constants";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { differenceInDays } from "date-fns";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,13 +26,26 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
     await ensurePermission("CREATE", "ASSET");
 
     try {
-        const { sharedUserIds, ...assetData } = data;
+        const { sharedUserIds, ...assetDataRaw } = data as any;
+        const assetData = { ...assetDataRaw };
+        
+        if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
+            try {
+                const details = JSON.parse(assetData.details);
+                if (details.buildDate) {
+                    assetData.currentUsage = Math.max(0, differenceInDays(new Date(), new Date(details.buildDate)));
+                }
+            } catch (e) {
+                console.error("Failed to parse build date", e);
+            }
+        }
+
         const asset = await prisma.asset.create({
             data: {
                 ...assetData,
                 userId: session.user.id,
                 sharedWith: {
-                    create: sharedUserIds?.map((userId) => ({
+                    create: sharedUserIds?.map((userId: string) => ({
                         userId,
                         permission: "READ", // Default permission
                     })) || [],
@@ -201,7 +215,19 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     }
 
     try {
-        const { sharedUserIds, ...assetData } = data;
+        const { sharedUserIds, ...assetDataRaw } = data as any;
+        const assetData = { ...assetDataRaw };
+
+        if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
+            try {
+                const details = JSON.parse(assetData.details);
+                if (details.buildDate) {
+                    assetData.currentUsage = Math.max(0, differenceInDays(new Date(), new Date(details.buildDate)));
+                }
+            } catch (e) {
+                console.error("Failed to parse build date", e);
+            }
+        }
 
         // Use a transaction to ensure atomic update and sharing sync
         const asset = await prisma.$transaction(async (tx) => {
@@ -219,7 +245,7 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
 
                 // Create new shares
                 await tx.assetShare.createMany({
-                    data: sharedUserIds.map((userId) => ({
+                    data: sharedUserIds.map((userId: string) => ({
                         assetId: id,
                         userId,
                         permission: "READ",

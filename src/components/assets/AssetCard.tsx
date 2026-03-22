@@ -17,6 +17,7 @@ import { useState, useTransition } from "react";
 import { isScheduleDue } from "@/lib/predictions";
 import { dismissReminder } from "@/lib/actions/schedules";
 import { Bell } from "lucide-react";
+import { formatHouseUsage } from "@/lib/utils";
 
 interface AssetCardProps {
     asset: any;
@@ -182,10 +183,14 @@ export function AssetCard({ asset, currentUserId, onDelete, maxDaysToEstimate = 
 
                     <div className="space-y-1 text-foreground">
                         <p className="text-3xl font-bold tracking-tight">
-                            {asset.currentUsage.toLocaleString()}
-                            <span className="text-xs font-normal opacity-70 ml-1 uppercase">
-                                {asset.trackingMethod === TRACKING_METHODS.MILEAGE ? "mi" : asset.trackingMethod === TRACKING_METHODS.HOURS ? "hrs" : ""}
-                            </span>
+                            {asset.type === ASSET_TYPES.HOUSE 
+                                ? formatHouseUsage(asset.currentUsage) 
+                                : asset.currentUsage.toLocaleString()}
+                            {asset.type !== ASSET_TYPES.HOUSE && (
+                                <span className="text-xs font-normal opacity-70 ml-1 uppercase">
+                                    {asset.trackingMethod === TRACKING_METHODS.MILEAGE ? "mi" : asset.trackingMethod === TRACKING_METHODS.HOURS ? "hrs" : ""}
+                                </span>
+                            )}
                         </p>
                         <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest leading-none mb-1">Current Usage</p>
 
@@ -225,6 +230,7 @@ export function AssetCard({ asset, currentUserId, onDelete, maxDaysToEstimate = 
                         <AddServiceDialog
                             assetId={asset.id}
                             trackingMethod={asset.trackingMethod}
+                            assetType={asset.type}
                             schedules={asset.schedules}
                             trigger={
                                 <Button variant="secondary" size="sm" className="w-full h-9 bg-background/50 backdrop-blur-sm hover:bg-background/80 border-none shadow-none text-xs gap-1.5 font-semibold">

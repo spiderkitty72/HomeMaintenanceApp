@@ -39,12 +39,13 @@ type ServiceFormValues = z.infer<typeof serviceSchema>;
 interface AddServiceDialogProps {
     assetId: string;
     trackingMethod: string;
+    assetType?: string;
     trigger?: React.ReactNode;
     serviceRecord?: any; // Existing record for editing
     schedules?: any[]; // For explicitly fulfilling reminders
 }
 
-export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceRecord, schedules }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
     const isEditing = !!serviceRecord;
@@ -161,19 +162,21 @@ export function AddServiceDialog({ assetId, trackingMethod, trigger, serviceReco
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="usageAtService"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Usage ({trackingMethod})</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="any" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {assetType !== "House" && (
+                                <FormField
+                                    control={form.control}
+                                    name="usageAtService"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Usage ({trackingMethod})</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" step="any" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
                         </div>
 
                         {processedSchedules.length > 0 && (
