@@ -15,6 +15,8 @@ const geistMono = Geist_Mono({
 import { Toaster } from "@/components/ui/sonner";
 import { VersionDisplay } from "@/components/VersionDisplay";
 import { ThemeProvider } from "@/components/theme-provider";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "MaintenanceApp",
@@ -42,13 +44,31 @@ export const viewport = {
   themeColor: "#09090b",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  let themeLight = "default";
+  let themeDark = "default";
+
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { preferences: true },
+    });
+    if (user?.preferences) {
+      try {
+        const prefs = JSON.parse(user.preferences);
+        if (prefs.themeLight) themeLight = prefs.themeLight;
+        if (prefs.themeDark) themeDark = prefs.themeDark;
+      } catch (e) {}
+    }
+  }
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-light-theme={themeLight} data-dark-theme={themeDark}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

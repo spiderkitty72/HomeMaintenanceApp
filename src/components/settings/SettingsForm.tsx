@@ -11,10 +11,14 @@ import { User, Lock, Save } from "lucide-react";
 import { updateSelf, changePassword } from "@/lib/actions/users";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 const profileSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
+    themeLight: z.string().optional(),
+    themeDark: z.string().optional(),
 });
 
 const passwordSchema = z.object({
@@ -30,15 +34,24 @@ interface SettingsFormProps {
     user: {
         name: string | null;
         email: string | null;
+        preferences?: string | null;
     };
 }
 
 export function SettingsForm({ user }: SettingsFormProps) {
+    const router = useRouter();
+    let userPreferences: any = {};
+    if (user.preferences) {
+        try { userPreferences = JSON.parse(user.preferences); } catch (e) {}
+    }
+
     const profileForm = useForm<z.infer<typeof profileSchema>>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
             name: user.name || "",
             email: user.email || "",
+            themeLight: userPreferences.themeLight || "default",
+            themeDark: userPreferences.themeDark || "default",
         },
     });
 
@@ -55,6 +68,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
         try {
             await updateSelf(values);
             toast.success("Profile updated successfully");
+            router.refresh();
         } catch (error: any) {
             toast.error(error.message || "Failed to update profile");
         }
@@ -118,6 +132,57 @@ export function SettingsForm({ user }: SettingsFormProps) {
                                                 <FormControl>
                                                     <Input placeholder="john@example.com" {...field} />
                                                 </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
+                                    <div className="col-span-1 md:col-span-2 space-y-1">
+                                        <h3 className="font-semibold text-lg tracking-tight">Appearance Options</h3>
+                                        <p className="text-sm text-muted-foreground">Customize how Light and Dark modes render when activated.</p>
+                                    </div>
+                                    <FormField
+                                        control={profileForm.control}
+                                        name="themeLight"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Light Theme Palette</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select pattern" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="default">Standard Light</SelectItem>
+                                                        <SelectItem value="warm">Warm Paper</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={profileForm.control}
+                                        name="themeDark"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Dark Theme Palette</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select pattern" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="default">Standard Dark (Zinc)</SelectItem>
+                                                        <SelectItem value="dim">Dim Slate</SelectItem>
+                                                        <SelectItem value="lighter">Higher Contrast</SelectItem>
+                                                        <SelectItem value="high-contrast">Pitch Black</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
