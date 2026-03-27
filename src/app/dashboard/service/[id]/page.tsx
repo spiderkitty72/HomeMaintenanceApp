@@ -33,12 +33,13 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     }
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    const isOwner = record.asset.userId === session.user.id;
+    const isOwner = record.asset.userId === session.user?.id;
+    const isShared = record.asset.sharedWith.some((share: any) => share.userId === session.user?.id);
     const hasEditPermission = await checkPermission("EDIT", "SERVICE");
     const hasDeletePermission = await checkPermission("DELETE", "SERVICE");
 
-    const canEdit = isAdmin || isOwner || hasEditPermission;
-    const canDelete = isAdmin || isOwner || hasDeletePermission;
+    const canEdit = isAdmin || isOwner || isShared || hasEditPermission;
+    const canDelete = isAdmin || isOwner || isShared || hasDeletePermission;
 
     const usageUnit = record.asset.trackingMethod === "Mileage" ? "mi" : record.asset.trackingMethod === "Hours" ? "hrs" : "";
 

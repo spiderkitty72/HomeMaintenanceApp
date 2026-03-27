@@ -207,7 +207,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                     <Tabs defaultValue="service" className="w-full">
                         <TabsList className="flex flex-wrap !h-auto w-full gap-2 p-1 bg-muted/50 border rounded-xl mb-6 justify-start">
                             <TabsTrigger value="service" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
-                                <History className="h-4 w-4 mr-2" /> History
+                                <History className="h-4 w-4 mr-2" /> Services
                             </TabsTrigger>
                             <TabsTrigger value="fuel" className="flex-1 min-w-[120px] flex items-center justify-center py-2">
                                 <Droplet className="h-4 w-4 mr-2" /> Fuel

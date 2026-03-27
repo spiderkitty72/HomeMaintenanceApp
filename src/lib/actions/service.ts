@@ -146,6 +146,7 @@ export async function getServiceRecord(id: string) {
             asset: {
                 include: {
                     schedules: true,
+                    sharedWith: true,
                 },
             },
             parts: {
@@ -198,16 +199,22 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
 
     const existing = await prisma.serviceRecord.findUnique({
         where: { id },
-        include: { asset: true, parts: true },
+        include: { 
+            asset: {
+                include: { sharedWith: true }
+            }, 
+            parts: true 
+        },
     });
 
     if (!existing) throw new Error("Record not found");
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    const isOwner = existing.asset.userId === session.user.id;
+    const isOwner = existing.asset.userId === session.user?.id;
+    const isShared = existing.asset.sharedWith.some(share => share.userId === session.user?.id);
     const hasPermission = await checkPermission("EDIT", "SERVICE");
 
-    if (!isAdmin && !isOwner && !hasPermission) {
+    if (!isAdmin && !isOwner && !isShared && !hasPermission) {
         throw new Error("Unauthorized to update this record");
     }
 
@@ -320,16 +327,22 @@ export async function deleteServiceRecord(id: string) {
 
     const existing = await prisma.serviceRecord.findUnique({
         where: { id },
-        include: { asset: true, parts: true },
+        include: { 
+            asset: {
+                include: { sharedWith: true }
+            }, 
+            parts: true 
+        },
     });
 
     if (!existing) throw new Error("Record not found");
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    const isOwner = existing.asset.userId === session.user.id;
+    const isOwner = existing.asset.userId === session.user?.id;
+    const isShared = existing.asset.sharedWith.some(share => share.userId === session.user?.id);
     const hasPermission = await checkPermission("DELETE", "SERVICE");
 
-    if (!isAdmin && !isOwner && !hasPermission) {
+    if (!isAdmin && !isOwner && !isShared && !hasPermission) {
         throw new Error("Unauthorized to delete this record");
     }
 
