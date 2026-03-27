@@ -113,20 +113,35 @@ export async function updateUser(userId: string, data: Partial<z.infer<typeof Cr
     return user;
 }
 
-export async function updateSelf(data: { name?: string; email?: string }) {
+export async function updateSelf(data: { name?: string; email?: string; themeLight?: string; themeDark?: string }) {
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) throw new Error("Unauthorized");
+
+    const existing = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { preferences: true }
+    });
+
+    let preferencesObj: Record<string, any> = {};
+    if (existing?.preferences) {
+        try { preferencesObj = JSON.parse(existing.preferences); } catch (e) {}
+    }
+
+    if (data.themeLight) preferencesObj.themeLight = data.themeLight;
+    if (data.themeDark) preferencesObj.themeDark = data.themeDark;
 
     const updated = await prisma.user.update({
         where: { id: userId },
         data: {
             name: data.name,
             email: data.email,
+            preferences: Object.keys(preferencesObj).length > 0 ? JSON.stringify(preferencesObj) : null,
         },
     });
 
     revalidatePath("/dashboard/settings");
+    revalidatePath("/");
     return updated;
 }
 
