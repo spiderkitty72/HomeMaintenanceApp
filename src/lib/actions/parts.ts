@@ -54,8 +54,22 @@ export async function getParts() {
     // For now, simplicity: parts owned by the user
     return await prisma.part.findMany({
         where: {
-            userId: session.user.id,
             isActive: true,
+            OR: [
+                { userId: session.user.id },
+                {
+                    compatibilities: {
+                        some: {
+                            asset: {
+                                OR: [
+                                    { userId: session.user.id },
+                                    { sharedWith: { some: { userId: session.user.id } } }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
         },
         include: {
             compatibilities: {
@@ -227,20 +241,38 @@ export async function getCompatibleParts(assetId: string) {
 
     return await prisma.part.findMany({
         where: {
-            userId: session.user.id,
             isActive: true,
             OR: [
+                { userId: session.user.id },
                 {
                     compatibilities: {
                         some: {
-                            assetId,
-                        },
-                    },
-                },
-                {
-                    compatibleType: asset.type,
-                },
+                            asset: {
+                                OR: [
+                                    { userId: session.user.id },
+                                    { sharedWith: { some: { userId: session.user.id } } }
+                                ]
+                            }
+                        }
+                    }
+                }
             ],
+            AND: [
+                {
+                    OR: [
+                        {
+                            compatibilities: {
+                                some: {
+                                    assetId,
+                                },
+                            },
+                        },
+                        {
+                            compatibleType: asset.type,
+                        },
+                    ],
+                }
+            ]
         },
         include: {
             compatibilities: {
