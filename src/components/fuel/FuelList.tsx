@@ -10,7 +10,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Fuel, Paperclip, ChevronRight, Calendar, Calculator, Banknote, Droplets, Tag, Gauge } from "lucide-react";
 import Link from "next/link";
 
@@ -37,14 +37,9 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                 {/* We can add mini-stats here later if passed from parent */}
             </div>
 
-            <Card className="overflow-hidden border-none md:border md:border-border shadow-none md:shadow-sm">
-                <CardHeader className="px-0 md:px-6">
-                    <CardTitle className="text-lg font-medium">Fuel History</CardTitle>
-                </CardHeader>
-                <CardContent className="px-0 md:px-6">
-                    {/* Mobile View: 2-Row Layout */}
-                    <div className="md:hidden space-y-3">
-                        {records.map((record, index) => {
+            {/* Mobile View: 2-Row Layout */}
+            <div className="md:hidden space-y-3">
+                {records.map((record, index) => {
                             let mpg = null;
                             const nextRecord = records[index + 1];
                             if (record.isFullTank && nextRecord && nextRecord.isFullTank) {
@@ -71,8 +66,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                                 <Calculator className="h-3.5 w-3.5 mr-1 text-primary" />
                                                 {record.usageAtFill.toLocaleString()}
                                             </div>
-                                            <div className="flex items-center font-bold text-base">
-                                                <Banknote className="h-3.5 w-3.5 mr-1 text-green-600" />
+                                            <div className="font-mono font-bold text-lg">
                                                 ${record.totalCost.toFixed(2)}
                                             </div>
                                         </div>
@@ -106,7 +100,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                     </div>
 
                     {/* Desktop View: Standard Table */}
-                    <div className="hidden md:block">
+                    <div className="hidden md:block rounded-md border bg-card overflow-hidden">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -132,7 +126,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
 
                                     return (
                                         <TableRow key={record.id}>
-                                            <TableCell>{format(new Date(record.date), "MMM d, yyyy")}</TableCell>
+                                            <TableCell className="font-medium">{format(new Date(record.date), "MMM d, yyyy")}</TableCell>
                                             <TableCell>
                                                 <div className="font-medium">{record.usageAtFill.toLocaleString()}</div>
                                                 {!record.isFullTank && <div className="text-[9px] text-muted-foreground uppercase font-bold">Partial</div>}
@@ -149,7 +143,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                                     <span className="text-muted-foreground">---</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-right font-medium">
+                                            <TableCell className="text-right font-mono">
                                                 ${record.totalCost.toFixed(2)}
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -178,8 +172,6 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                             </TableBody>
                         </Table>
                     </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }

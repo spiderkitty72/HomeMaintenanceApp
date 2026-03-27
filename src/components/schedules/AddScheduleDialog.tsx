@@ -69,11 +69,11 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: Add
                 assetId,
                 lastPerformedDate: values.lastPerformedDate ? new Date(values.lastPerformedDate) : null,
             });
-            toast.success("Schedule created");
+            toast.success("Reminder created");
             setOpen(false);
             form.reset();
         } catch (error) {
-            toast.error("Failed to create schedule");
+            toast.error("Failed to create reminder");
         }
     }
 
@@ -82,12 +82,12 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: Add
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                     <CalendarClock className="h-4 w-4" />
-                    <span className="hidden sm:inline">Add Schedule</span>
+                    <span className="hidden sm:inline">Add Reminder</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add Maintenance Schedule</DialogTitle>
+                    <DialogTitle>Add Maintenance Reminder</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -177,7 +177,7 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: Add
                         </div>
 
                         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? "Saving..." : "Create Schedule"}
+                            {form.formState.isSubmitting ? "Saving..." : "Create Reminder"}
                         </Button>
                     </form>
                 </Form>
