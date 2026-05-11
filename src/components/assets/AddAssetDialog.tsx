@@ -38,7 +38,7 @@ interface AddAssetDialogProps {
     trigger?: React.ReactNode;
 }
 
-const PREDEFINED_KEYS = ['make', 'model', 'year', 'vin', 'address', 'buildDate', 'sqFt', 'manufacturer', 'serialNumber'];
+const PREDEFINED_KEYS = ['make', 'model', 'year', 'vin', 'fuelCapacity', 'address', 'buildDate', 'sqFt', 'manufacturer', 'serialNumber'];
 
 export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const [open, setOpen] = useState(false);
@@ -275,6 +275,17 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                                             <FormItem>
                                                 <FormControl>
                                                     <Input placeholder="VIN" {...field} value={field.value ?? ""} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="details.fuelCapacity"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Fuel Capacity (Gal)" type="number" step="0.1" {...field} value={field.value ?? ""} />
                                                 </FormControl>
                                             </FormItem>
                                         )}

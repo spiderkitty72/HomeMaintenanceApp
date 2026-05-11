@@ -38,6 +38,7 @@ export function FuelChart({ records }: FuelChartProps) {
     
     const chartData = [];
     let validGallons = 0;
+    let validDistance = 0;
     
     for (let i = 0; i < sortedRecords.length; i++) {
         const record = sortedRecords[i];
@@ -45,11 +46,12 @@ export function FuelChart({ records }: FuelChartProps) {
         
         if (i > 0) {
             const prevRecord = sortedRecords[i - 1]; // prevRecord is older
-            if (record.isFullTank && prevRecord.isFullTank) {
+            if (record.isFullTank && prevRecord.isFullTank && !(record as any).missedPrevious) {
                 const distance = record.usageAtFill - prevRecord.usageAtFill;
                 if (distance > 0) {
                     mpg = Number((distance / record.gallons).toFixed(2));
                     validGallons += record.gallons;
+                    validDistance += distance;
                 }
             }
         }
@@ -69,10 +71,7 @@ export function FuelChart({ records }: FuelChartProps) {
     }
 
     // Calculate overall average MPG for the ReferenceLine
-    const totalDistance = chartData.length > 0 && sortedRecords.length > 1 
-        ? sortedRecords[sortedRecords.length - 1].usageAtFill - sortedRecords[0].usageAtFill 
-        : 0;
-    const avgMpg = validGallons > 0 ? Number((totalDistance / validGallons).toFixed(1)) : 0;
+    const avgMpg = validGallons > 0 ? Number((validDistance / validGallons).toFixed(1)) : 0;
 
     // Calculate domain with a slight buffer
     const minMpg = Math.min(...chartData.map(d => d.mpg), avgMpg || Infinity);

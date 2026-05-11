@@ -16,6 +16,7 @@ const FuelRecordSchema = z.object({
     pricePerGallon: z.number(),
     totalCost: z.number(),
     isFullTank: z.boolean(),
+    missedPrevious: z.boolean().default(false),
     image: z.string().optional(),
 });
 
@@ -37,6 +38,7 @@ export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
                 pricePerGallon: data.pricePerGallon,
                 totalCost: data.totalCost,
                 isFullTank: data.isFullTank,
+                missedPrevious: data.missedPrevious,
             },
         });
 
@@ -97,19 +99,28 @@ export async function getFuelStats(assetId: string) {
 
     if (records.length < 2) return null;
 
-    // Basic MPG calculation for the last few fill-ups
-    // (Latest Odometer - Oldest Odometer in batch) / (Total Gallons excluding latest if latest is full tank)
-    // This is a simplified version.
+    // We need to calculate the average MPG over the last N records, excluding those marked as missedPrevious
+    // Since a missedPrevious record means the distance covered multiple tanks but gallons only covers one,
+    // we should NOT use its distance or gallons in the overall MPG calculation.
+    
+    let totalValidDistance = 0;
+    let totalValidGallons = 0;
 
-    const newest = records[0];
-    const oldest = records[records.length - 1];
+    for (let i = 0; i < records.length - 1; i++) {
+        const newest = records[i];
+        const oldest = records[i + 1];
+        
+        // Only calculate MPG if both are full tanks and we didn't miss the previous fuel log
+        if (newest.isFullTank && oldest.isFullTank && !newest.missedPrevious) {
+            const distance = newest.usageAtFill - oldest.usageAtFill;
+            if (distance > 0) {
+                totalValidDistance += distance;
+                totalValidGallons += newest.gallons;
+            }
+        }
+    }
 
-    const distance = newest.usageAtFill - oldest.usageAtFill;
-    const totalGallons = records.slice(0, -1).reduce((acc, r) => acc + r.gallons, 0);
-
-    if (totalGallons <= 0 || distance <= 0) return null;
-
-    const avgMpg = distance / totalGallons;
+    const avgMpg = totalValidGallons > 0 && totalValidDistance > 0 ? totalValidDistance / totalValidGallons : 0;
     const avgCostPerGal = records.reduce((acc, r) => acc + r.pricePerGallon, 0) / records.length;
     const totalSpent = records.reduce((acc, r) => acc + r.totalCost, 0);
 

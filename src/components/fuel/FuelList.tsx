@@ -44,7 +44,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                 {records.map((record, index) => {
                             let mpg = null;
                             const nextRecord = records[index + 1];
-                            if (record.isFullTank && nextRecord && nextRecord.isFullTank) {
+                            if (record.isFullTank && nextRecord && nextRecord.isFullTank && !(record as any).missedPrevious) {
                                 const distance = record.usageAtFill - nextRecord.usageAtFill;
                                 if (distance > 0) {
                                     mpg = distance / record.gallons;
@@ -119,7 +119,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                 {records.map((record, index) => {
                                     let mpg = null;
                                     const nextRecord = records[index + 1];
-                                    if (record.isFullTank && nextRecord && nextRecord.isFullTank) {
+                                    if (record.isFullTank && nextRecord && nextRecord.isFullTank && !(record as any).missedPrevious) {
                                         const distance = record.usageAtFill - nextRecord.usageAtFill;
                                         if (distance > 0) {
                                             mpg = distance / record.gallons;

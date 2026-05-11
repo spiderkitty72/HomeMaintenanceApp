@@ -94,6 +94,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         assetId={asset.id}
                         trackingMethod={asset.trackingMethod}
                         lastUsage={asset.currentUsage}
+                        avgMpg={fuelStats?.avgMpg}
                     />
                     <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} assetType={asset.type} schedules={schedules} />
                     <AddAssetDialog 
