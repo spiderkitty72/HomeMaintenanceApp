@@ -23,9 +23,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/common/ImageUpload";
-import { Fuel, Plus } from "lucide-react";
+import { Fuel, Plus, AlertTriangle } from "lucide-react";
 import { createFuelRecord, updateFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const fuelSchema = z.object({
     date: z.string(),
@@ -34,6 +35,7 @@ const fuelSchema = z.object({
     pricePerGallon: z.coerce.number().min(0.01, "Price must be positive"),
     totalCost: z.coerce.number().min(0, "Total cost must be positive"),
     isFullTank: z.boolean().default(true),
+    missedPrevious: z.boolean().default(false),
     image: z.string().optional(),
 });
 
@@ -43,11 +45,12 @@ interface AddFuelDialogProps {
     assetId: string;
     trackingMethod: string;
     lastUsage?: number;
+    avgMpg?: number;
     trigger?: React.ReactNode;
     fuelRecord?: any; // To handle existing record for editing
 }
 
-export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fuelRecord }: AddFuelDialogProps) {
+export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trigger, fuelRecord }: AddFuelDialogProps) {
     const [open, setOpen] = useState(false);
     const isEditing = !!fuelRecord;
 
@@ -60,9 +63,29 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
             pricePerGallon: fuelRecord?.pricePerGallon ?? 0,
             totalCost: fuelRecord?.totalCost ?? 0,
             isFullTank: fuelRecord?.isFullTank ?? true,
+            missedPrevious: fuelRecord?.missedPrevious ?? false,
             image: fuelRecord?.attachments?.[0]?.url ?? "",
         },
     });
+
+    const watchedUsage = form.watch("usageAtFill");
+    const watchedGallons = form.watch("gallons");
+    const watchedMissed = form.watch("missedPrevious");
+    const watchedIsFull = form.watch("isFullTank");
+
+    // Anomaly Detection
+    let isAnomaly = false;
+    let currentMpg = null;
+    
+    if (!watchedMissed && watchedIsFull && avgMpg && avgMpg > 0 && lastUsage && watchedUsage > lastUsage && watchedGallons > 0) {
+        const distance = watchedUsage - lastUsage;
+        currentMpg = distance / watchedGallons;
+        
+        // 50% threshold: e.g. if avg is 30, warning if > 45 or < 15
+        if (currentMpg > avgMpg * 1.5 || currentMpg < avgMpg * 0.5) {
+            isAnomaly = true;
+        }
+    }
 
     const editHistory = useRef<string[]>([]);
 
@@ -297,23 +320,53 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="isFullTank"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Full Tank?</FormLabel>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="isFullTank"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Full Tank?</FormLabel>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="missedPrevious"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Missed Prior Log?</FormLabel>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {isAnomaly && (
+                            <Alert variant="destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Unusual Fuel Economy</AlertTitle>
+                                <AlertDescription className="text-xs mt-1">
+                                    Your calculated MPG ({currentMpg?.toFixed(1)}) is significantly different from your average ({avgMpg?.toFixed(1)}). Did you miss a previous fuel log? If so, please check the box above.
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
                         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                             {form.formState.isSubmitting ? (isEditing ? "Saving..." : "Logging...") : (isEditing ? "Save Changes" : "Log Fuel")}

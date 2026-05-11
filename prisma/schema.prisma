@@ -253,6 +253,7 @@ model FuelRecord {
   pricePerGallon Float
   totalCost     Float
   isFullTank    Boolean  @default(true)
+  missedPrevious Boolean @default(false)
   
   asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
   attachments   Attachment[]
