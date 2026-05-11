@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Image as ImageIcon, Wrench, Bell } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Wrench, Bell, Edit2 } from "lucide-react";
 import { createServiceRecord, updateServiceRecord } from "@/lib/actions/service";
 import { getCompatibleParts } from "@/lib/actions/parts";
 import { toast } from "sonner";
@@ -136,9 +136,11 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button size="sm" className="gap-2">
-                        <Wrench className="h-4 w-4" />
-                        <span className="hidden sm:inline text-xs font-semibold">Add Service</span>
+                    <Button variant={isEditing ? "outline" : "default"} size="sm" className="gap-2">
+                        {isEditing ? <Edit2 className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
+                        <span className={isEditing ? "" : "hidden sm:inline text-xs font-semibold"}>
+                            {isEditing ? "Edit" : "Add Service"}
+                        </span>
                     </Button>
                 )}
             </DialogTrigger>
