@@ -15,6 +15,7 @@ const AssetSchema = z.object({
     details: z.string().optional(), // JSON string
     image: z.string().optional(),
     sharedUserIds: z.array(z.string()).optional(),
+    attachments: z.array(z.string()).optional(),
 });
 
 export async function createAsset(data: z.infer<typeof AssetSchema>) {
@@ -26,7 +27,7 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
     await ensurePermission("CREATE", "ASSET");
 
     try {
-        const { sharedUserIds, ...assetDataRaw } = data as any;
+        const { sharedUserIds, attachments, ...assetDataRaw } = data as any;
         const assetData = { ...assetDataRaw };
         
         if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
@@ -50,6 +51,12 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
                         permission: "READ", // Default permission
                     })) || [],
                 },
+                attachments: attachments?.length > 0 ? {
+                    create: attachments.map((url: string) => ({
+                        url,
+                        fileType: "image"
+                    }))
+                } : undefined,
             },
         });
 
@@ -215,7 +222,7 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     }
 
     try {
-        const { sharedUserIds, ...assetDataRaw } = data as any;
+        const { sharedUserIds, attachments, ...assetDataRaw } = data as any;
         const assetData = { ...assetDataRaw };
 
         if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
@@ -251,6 +258,24 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
                         permission: "READ",
                     })),
                 });
+            }
+
+            if (attachments !== undefined) {
+                // Remove old attachments
+                await tx.attachment.deleteMany({
+                    where: { assetId: id },
+                });
+
+                // Create new attachments
+                if (attachments.length > 0) {
+                    await tx.attachment.createMany({
+                        data: attachments.map((url: string) => ({
+                            assetId: id,
+                            url,
+                            fileType: "image",
+                        })),
+                    });
+                }
             }
 
             return updated;

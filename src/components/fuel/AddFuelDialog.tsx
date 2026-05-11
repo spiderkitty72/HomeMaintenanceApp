@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -64,9 +64,82 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
         },
     });
 
-    // Auto-calculate total cost or price per gallon
-    const watchedPrice = form.watch("pricePerGallon");
-    const watchedGallons = form.watch("gallons");
+    const editHistory = useRef<string[]>([]);
+
+    const pushHistory = (field: string) => {
+        editHistory.current = editHistory.current.filter((f) => f !== field);
+        editHistory.current.push(field);
+        if (editHistory.current.length > 3) {
+            editHistory.current.shift();
+        }
+    };
+
+    // Auto-calculate handlers
+    const handleGallonsChange = (valStr: string) => {
+        pushHistory("gallons");
+        const val = parseFloat(valStr);
+        if (!isNaN(val) && val > 0) {
+            const price = Number(form.getValues("pricePerGallon")) || 0;
+            const total = Number(form.getValues("totalCost")) || 0;
+            const lastTwo = editHistory.current.slice(-2);
+
+            if (!lastTwo.includes("totalCost") && price > 0) {
+                form.setValue("totalCost", Number((val * price).toFixed(2)));
+            } else if (!lastTwo.includes("pricePerGallon") && total > 0) {
+                form.setValue("pricePerGallon", Number((total / val).toFixed(3)));
+            } else if (price > 0) {
+                form.setValue("totalCost", Number((val * price).toFixed(2)));
+            } else if (total > 0) {
+                form.setValue("pricePerGallon", Number((total / val).toFixed(3)));
+            }
+        }
+    };
+
+    const handlePriceChange = (valStr: string) => {
+        pushHistory("pricePerGallon");
+        const val = parseFloat(valStr);
+        if (!isNaN(val) && val > 0) {
+            const gallons = Number(form.getValues("gallons")) || 0;
+            const total = Number(form.getValues("totalCost")) || 0;
+            const lastTwo = editHistory.current.slice(-2);
+
+            if (!lastTwo.includes("totalCost") && gallons > 0) {
+                form.setValue("totalCost", Number((val * gallons).toFixed(2)));
+            } else if (!lastTwo.includes("gallons") && total > 0) {
+                form.setValue("gallons", Number((total / val).toFixed(3)));
+            } else if (gallons > 0) {
+                form.setValue("totalCost", Number((val * gallons).toFixed(2)));
+            } else if (total > 0) {
+                form.setValue("gallons", Number((total / val).toFixed(3)));
+            }
+        }
+    };
+
+    const handleTotalChange = (valStr: string) => {
+        pushHistory("totalCost");
+        const val = parseFloat(valStr);
+        if (!isNaN(val) && val > 0) {
+            const gallons = Number(form.getValues("gallons")) || 0;
+            const price = Number(form.getValues("pricePerGallon")) || 0;
+            const lastTwo = editHistory.current.slice(-2);
+
+            if (!lastTwo.includes("pricePerGallon") && gallons > 0) {
+                form.setValue("pricePerGallon", Number((val / gallons).toFixed(3)));
+            } else if (!lastTwo.includes("gallons") && price > 0) {
+                form.setValue("gallons", Number((val / price).toFixed(3)));
+            } else if (gallons > 0) {
+                form.setValue("pricePerGallon", Number((val / gallons).toFixed(3)));
+            } else if (price > 0) {
+                form.setValue("gallons", Number((val / price).toFixed(3)));
+            }
+        }
+    };
+
+    const handleZeroFocus = (field: any) => {
+        if (field.value === 0 || field.value === "0") {
+            field.onChange("");
+        }
+    };
 
     async function onSubmit(values: FuelFormValues) {
         try {
@@ -138,7 +211,13 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
                                 <FormItem>
                                     <FormLabel>{trackingMethod}</FormLabel>
                                     <FormControl>
-                                        <Input type="number" step="any" {...field} />
+                                        <Input 
+                                            type="number" 
+                                            step="any" 
+                                            {...field} 
+                                            value={field.value === 0 && !isEditing ? "" : field.value}
+                                            onFocus={() => handleZeroFocus(field)}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -157,12 +236,11 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
                                                 type="number"
                                                 step="0.001"
                                                 {...field}
+                                                value={field.value === 0 && !isEditing ? "" : field.value}
+                                                onFocus={() => handleZeroFocus(field)}
                                                 onChange={(e) => {
                                                     field.onChange(e);
-                                                    const val = parseFloat(e.target.value);
-                                                    if (val && watchedPrice) {
-                                                        form.setValue("totalCost", Number((val * watchedPrice).toFixed(2)));
-                                                    }
+                                                    handleGallonsChange(e.target.value);
                                                 }}
                                             />
                                         </FormControl>
@@ -181,12 +259,11 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
                                                 type="number"
                                                 step="0.001"
                                                 {...field}
+                                                value={field.value === 0 && !isEditing ? "" : field.value}
+                                                onFocus={() => handleZeroFocus(field)}
                                                 onChange={(e) => {
                                                     field.onChange(e);
-                                                    const val = parseFloat(e.target.value);
-                                                    if (val && watchedGallons) {
-                                                        form.setValue("totalCost", Number((val * watchedGallons).toFixed(2)));
-                                                    }
+                                                    handlePriceChange(e.target.value);
                                                 }}
                                             />
                                         </FormControl>
@@ -203,7 +280,17 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, trigger, fue
                                 <FormItem>
                                     <FormLabel>Total Cost</FormLabel>
                                     <FormControl>
-                                        <Input type="number" step="0.01" {...field} />
+                                        <Input 
+                                            type="number" 
+                                            step="0.01" 
+                                            {...field} 
+                                            value={field.value === 0 && !isEditing ? "" : field.value}
+                                            onFocus={() => handleZeroFocus(field)}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                handleTotalChange(e.target.value);
+                                            }}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

@@ -24,6 +24,7 @@ import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getAssets } from "@/lib/actions/assets";
 import { formatHouseUsage } from "@/lib/utils";
+import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -42,6 +43,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                     user: true,
                 },
             },
+            attachments: true,
         },
     });
 
@@ -94,10 +96,15 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         lastUsage={asset.currentUsage}
                     />
                     <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} assetType={asset.type} schedules={schedules} />
-                    <Button variant="outline" size="sm">
-                        <Settings className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Settings</span>
-                    </Button>
+                    <AddAssetDialog 
+                        asset={asset as any} 
+                        trigger={
+                            <Button variant="outline" size="sm">
+                                <Settings className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Settings</span>
+                            </Button>
+                        } 
+                    />
                 </div>
             </div>
 
@@ -169,7 +176,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                                 Avg. Price
                                             </div>
                                             <div className="font-medium">
-                                                ${fuelStats.avgCostPerGal.toFixed(2)}/gal
+                                                ${fuelStats.avgCostPerGal.toFixed(3)}/gal
                                             </div>
                                         </div>
                                     </div>
@@ -179,7 +186,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                     </Card>
 
                     {/* Dynamic Details from JSON */}
-                    {asset.details && (
+                    {asset.details && Object.keys(JSON.parse(asset.details)).length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -195,6 +202,31 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                             </span>
                                             <span className="text-sm font-medium">{value as string}</span>
                                         </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Additional Photos */}
+                    {(asset as any).attachments && (asset as any).attachments.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Photos
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {(asset as any).attachments.map((attachment: any) => (
+                                        <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md overflow-hidden border hover:opacity-80 transition-opacity block bg-muted">
+                                            <Image
+                                                src={attachment.url}
+                                                alt="Asset photo"
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </a>
                                     ))}
                                 </div>
                             </CardContent>
