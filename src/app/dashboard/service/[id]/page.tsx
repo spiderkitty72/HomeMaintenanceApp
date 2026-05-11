@@ -21,7 +21,6 @@ import { DeleteRecordButton } from "@/components/common/DeleteRecordButton";
 import { deleteServiceRecord } from "@/lib/actions/service";
 import { auth } from "@/auth";
 import { checkPermission } from "@/lib/permissions";
-import { Edit2 } from "lucide-react";
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -54,17 +53,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 </Link>
             </div>
 
-            {/* DEBUG INFO - REMOVE LATER */}
-            {process.env.NODE_ENV === "development" && (
-                <div className="mb-4 p-2 bg-black text-white text-[10px] font-mono rounded flex gap-4">
-                    <span>isAdmin: {String(isAdmin)}</span>
-                    <span>isOwner: {String(isOwner)}</span>
-                    <span>hasEdit: {String(hasEditPermission)}</span>
-                    <span>hasDelete: {String(hasDeletePermission)}</span>
-                    <span>canEdit: {String(canEdit)}</span>
-                    <span>canDelete: {String(canDelete)}</span>
-                </div>
-            )}
+            {/* REMOVED DIAGNOSTIC BLOCK */}
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
@@ -86,12 +75,6 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                     trackingMethod={record.asset.trackingMethod}
                                     schedules={record.asset.schedules as any}
                                     serviceRecord={record}
-                                    trigger={
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <Edit2 className="h-4 w-4" />
-                                            Edit
-                                        </Button>
-                                    }
                                 />
                             )}
                             {canDelete && (
