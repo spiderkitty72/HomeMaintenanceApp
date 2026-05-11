@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Fuel, Paperclip, ChevronRight, Calendar, Calculator, Banknote, Droplets, Tag, Gauge } from "lucide-react";
 import Link from "next/link";
+import { FuelChart } from "./FuelChart";
 
 interface FuelListProps {
     records: FuelRecord[];
@@ -33,6 +34,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
 
     return (
         <div className="space-y-4">
+            <FuelChart records={records} />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* We can add mini-stats here later if passed from parent */}
             </div>
@@ -79,7 +81,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                             </div>
                                             <div className="flex items-center text-xs text-muted-foreground">
                                                 <Tag className="h-3 w-3 mr-1" />
-                                                ${record.pricePerGallon.toFixed(2)}/gal
+                                                ${record.pricePerGallon.toFixed(3)}/gal
                                             </div>
                                             <div className="flex items-center">
                                                 {mpg ? (
@@ -132,7 +134,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                                 {!record.isFullTank && <div className="text-[9px] text-muted-foreground uppercase font-bold">Partial</div>}
                                             </TableCell>
                                             <TableCell>{record.gallons.toFixed(3)} gal</TableCell>
-                                            <TableCell>${record.pricePerGallon.toFixed(2)}</TableCell>
+                                            <TableCell>${record.pricePerGallon.toFixed(3)}</TableCell>
                                             <TableCell>
                                                 {mpg ? (
                                                     <div className="flex flex-col">

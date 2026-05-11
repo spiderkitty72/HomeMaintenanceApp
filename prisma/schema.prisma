@@ -125,6 +125,7 @@ model Asset {
   schedules      ServiceSchedule[]
   compatibilities AssetPartCompatibility[]
   specs          AssetSpec[]
+  attachments    Attachment[]
 }
 
 model AssetSpecType {
@@ -283,10 +284,12 @@ model Attachment {
   serviceRecordId String?
   fuelRecordId    String?
   partPurchaseId  String?
+  assetId         String?
   
   serviceRecord   ServiceRecord? @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
   fuelRecord      FuelRecord?    @relation(fields: [fuelRecordId], references: [id], onDelete: Cascade)
   partPurchase    PartPurchase?  @relation(fields: [partPurchaseId], references: [id], onDelete: Cascade)
+  asset           Asset?         @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
 model SystemSetting {

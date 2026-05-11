@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
 import { createAsset, updateAsset } from "@/lib/actions/assets";
 import { getUsersPublic } from "@/lib/actions/users";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Trash2 } from "lucide-react";
 import { useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -27,6 +27,8 @@ const formSchema = z.object({
     image: z.string().optional(),
     details: z.record(z.string(), z.any()).default({}),
     sharedUserIds: z.array(z.string()).default([]),
+    attachments: z.array(z.string()).default([]),
+    customSpecs: z.array(z.object({ key: z.string(), value: z.string() })).default([]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -35,6 +37,8 @@ interface AddAssetDialogProps {
     asset?: Asset;
     trigger?: React.ReactNode;
 }
+
+const PREDEFINED_KEYS = ['make', 'model', 'year', 'vin', 'address', 'buildDate', 'sqFt', 'manufacturer', 'serialNumber'];
 
 export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const [open, setOpen] = useState(false);
@@ -47,6 +51,12 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     }, [open]);
 
     const initialDetails = asset?.details ? JSON.parse(asset.details) : {};
+    
+    const initialCustomSpecs = Object.entries(initialDetails)
+        .filter(([key]) => !PREDEFINED_KEYS.includes(key))
+        .map(([key, value]) => ({ key, value: String(value) }));
+
+    const initialAttachments = (asset as any)?.attachments?.map((a: any) => a.url) || [];
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
@@ -58,19 +68,37 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
             image: asset?.image || "",
             details: initialDetails,
             sharedUserIds: (asset as any)?.sharedWith?.map((s: any) => s.userId) || [],
+            attachments: initialAttachments,
+            customSpecs: initialCustomSpecs,
         },
     });
 
     const isEditing = !!asset;
 
     const assetType = form.watch("type");
+    const attachments = form.watch("attachments");
+    const customSpecs = form.watch("customSpecs");
 
     async function onSubmit(values: FormValues) {
         try {
+            const finalDetails: any = {};
+            PREDEFINED_KEYS.forEach(key => {
+                if (values.details[key] !== undefined && values.details[key] !== "") {
+                    finalDetails[key] = values.details[key];
+                }
+            });
+            values.customSpecs.forEach(spec => {
+                if (spec.key.trim()) {
+                    finalDetails[spec.key.trim()] = spec.value;
+                }
+            });
+
             const dataToSubmit = {
                 ...values,
-                details: JSON.stringify(values.details),
+                details: JSON.stringify(finalDetails),
             };
+            // @ts-ignore
+            delete dataToSubmit.customSpecs;
 
             if (isEditing && asset) {
                 await updateAsset(asset.id, dataToSubmit as any);
@@ -86,6 +114,24 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
         }
     }
 
+    const addAttachment = (url: string) => {
+        if (url) {
+            form.setValue("attachments", [...attachments, url]);
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        form.setValue("attachments", attachments.filter((_, i) => i !== index));
+    };
+
+    const addCustomSpec = () => {
+        form.setValue("customSpecs", [...customSpecs, { key: "", value: "" }]);
+    };
+
+    const removeCustomSpec = (index: number) => {
+        form.setValue("customSpecs", customSpecs.filter((_, i) => i !== index));
+    };
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -95,7 +141,7 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Edit Asset" : "Add New Asset"}</DialogTitle>
                 </DialogHeader>
@@ -106,6 +152,7 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                             name="image"
                             render={({ field }) => (
                                 <FormItem>
+                                    <FormLabel>Main Image (Dashboard & Card Default)</FormLabel>
                                     <FormControl>
                                         <ImageUpload
                                             onUpload={field.onChange}
@@ -301,6 +348,62 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                             )}
                         </div>
 
+                        {/* Custom Specifications */}
+                        <div className="space-y-4 pt-2 border-t">
+                            <div className="flex items-center justify-between">
+                                <FormLabel className="flex items-center gap-2">
+                                    Custom Specifications
+                                </FormLabel>
+                                <Button type="button" variant="outline" size="sm" onClick={addCustomSpec}>
+                                    <Plus className="h-3 w-3 mr-1" /> Add Spec
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {customSpecs.map((_, index) => (
+                                    <div key={index} className="flex gap-2 items-start">
+                                        <FormField
+                                            control={form.control}
+                                            name={`customSpecs.${index}.key`}
+                                            render={({ field }) => (
+                                                <FormItem className="flex-1">
+                                                    <FormControl>
+                                                        <Input placeholder="e.g. Insurance Policy" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name={`customSpecs.${index}.value`}
+                                            render={({ field }) => (
+                                                <FormItem className="flex-1">
+                                                    <FormControl>
+                                                        <Input placeholder="Value" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive h-10 w-10 shrink-0"
+                                            onClick={() => removeCustomSpec(index)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {customSpecs.length === 0 && (
+                                    <p className="text-xs text-muted-foreground italic border border-dashed rounded-md p-3 text-center">
+                                        No custom specifications added.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
                         {assetType !== ASSET_TYPES.HOUSE && (
                             <FormField
                                 control={form.control}
@@ -316,6 +419,30 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                                 )}
                             />
                         )}
+
+                        {/* Multiple Pictures Section */}
+                        <div className="space-y-4 pt-2 border-t">
+                            <FormLabel className="flex items-center gap-2">
+                                Additional Photos
+                            </FormLabel>
+                            <div className="grid grid-cols-2 gap-4">
+                                {attachments.map((url, index) => (
+                                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border">
+                                        <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 rounded-full"
+                                            onClick={() => removeAttachment(index)}
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <ImageUpload onUpload={addAttachment} label="Upload an additional photo" />
+                        </div>
 
                         {/* Sharing Section */}
                         <div className="space-y-3 pt-2 border-t">
