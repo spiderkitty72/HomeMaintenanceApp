@@ -5,20 +5,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSpecTypes, addSpecType, upsertAssetSpec } from "@/lib/actions/specs";
 import { AssetSpecType } from "@prisma/client";
 
 interface AddSpecDialogProps {
     assetId: string;
+    spec?: any;
 }
 
-export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
+export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
     const [open, setOpen] = useState(false);
     const [specTypes, setSpecTypes] = useState<AssetSpecType[]>([]);
-    const [selectedTypeId, setSelectedTypeId] = useState<string>("");
-    const [value, setValue] = useState<string>("");
+    const [selectedTypeId, setSelectedTypeId] = useState<string>(spec?.specTypeId || "");
+    const [value, setValue] = useState<string>(spec?.value || "");
     const [isAddingNewType, setIsAddingNewType] = useState(false);
     const [newTypeName, setNewTypeName] = useState("");
     const [newTypeUnit, setNewTypeUnit] = useState("");
@@ -73,8 +74,10 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
     }
 
     function resetForm() {
-        setSelectedTypeId("");
-        setValue("");
+        if (!spec) {
+            setSelectedTypeId("");
+            setValue("");
+        }
         setIsAddingNewType(false);
     }
 
@@ -83,13 +86,19 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" /> Add Spec
-                </Button>
+                {spec ? (
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-all">
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                ) : (
+                    <Button size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" /> Add Spec
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add Asset Specification</DialogTitle>
+                    <DialogTitle>{spec ? "Edit Specification" : "Add Asset Specification"}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     {isAddingNewType ? (
@@ -122,34 +131,36 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
                         <div className="space-y-1">
                             <div className="text-[10px] uppercase font-bold text-muted-foreground">Specification Type</div>
                             <div className="flex gap-2">
-                                <Select value={selectedTypeId} onValueChange={setSelectedTypeId}>
-                                    <SelectTrigger className="flex-1">
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {specTypes.map((type) => (
-                                            <SelectItem key={type.id} value={type.id}>
-                                                {type.name} {type.unit ? `(${type.unit})` : ""}
-                                            </SelectItem>
-                                        ))}
-                                        {specTypes.length === 0 && (
-                                            <div className="p-2 text-xs text-muted-foreground text-center">No types created yet</div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsAddingNewType(true);
-                                    }}
-                                    title="Add new type"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                                    <Select value={selectedTypeId} onValueChange={setSelectedTypeId} disabled={!!spec}>
+                                        <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {specTypes.map((type) => (
+                                                <SelectItem key={type.id} value={type.id}>
+                                                    {type.name} {type.unit ? `(${type.unit})` : ""}
+                                                </SelectItem>
+                                            ))}
+                                            {specTypes.length === 0 && (
+                                                <div className="p-2 text-xs text-muted-foreground text-center">No types created yet</div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    {!spec && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setIsAddingNewType(true);
+                                            }}
+                                            title="Add new type"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    )}
                             </div>
                         </div>
                     )}
@@ -164,7 +175,7 @@ export function AddSpecDialog({ assetId }: AddSpecDialogProps) {
                     </div>
 
                     <Button className="w-full" onClick={handleSubmit}>
-                        Save Specification
+                        {spec ? "Save Changes" : "Save Specification"}
                     </Button>
                 </div>
             </DialogContent>

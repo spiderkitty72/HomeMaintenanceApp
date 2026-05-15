@@ -96,7 +96,6 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    <AddScheduleDialog assetId={asset.id} trackingMethod={asset.trackingMethod} currentUsage={asset.currentUsage} />
                     <AddFuelDialog
                         assetId={asset.id}
                         trackingMethod={asset.trackingMethod}

@@ -50,6 +50,41 @@ export async function createSchedule(data: z.infer<typeof ScheduleSchema>) {
     return schedule;
 }
 
+export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSchema>) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await ensurePermission("EDIT", "SERVICE");
+
+    const asset = await prisma.asset.findUnique({
+        where: { id: data.assetId },
+        include: { fuelRecords: true }
+    });
+
+    if (!asset) throw new Error("Asset not found");
+
+    const dailyUsage = calculateDailyUsage(asset.fuelRecords);
+
+    // Calculate updated prediction
+    const tempSchedule = { ...data, id, nextDueUsage: null, nextDueDate: null } as any;
+    if (data.frequencyType !== "Date") {
+        tempSchedule.nextDueUsage = (data.lastPerformedUsage ?? 0) + data.frequencyValue;
+    }
+    const nextDueDate = predictNextDueDate(tempSchedule, asset.currentUsage, dailyUsage);
+
+    const schedule = await prisma.serviceSchedule.update({
+        where: { id },
+        data: {
+            ...data,
+            nextDueDate,
+            nextDueUsage: tempSchedule.nextDueUsage,
+        },
+    });
+
+    revalidatePath(`/dashboard/asset/${data.assetId}`);
+    return schedule;
+}
+
 export async function getSchedules(assetId: string) {
     return await prisma.serviceSchedule.findMany({
         where: { assetId },
