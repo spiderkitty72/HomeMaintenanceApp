@@ -91,7 +91,7 @@ export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
                         <Edit2 className="h-4 w-4" />
                     </Button>
                 ) : (
-                    <Button size="sm" className="gap-2">
+                    <Button className="gap-2">
                         <Plus className="h-4 w-4" /> Add Spec
                     </Button>
                 )}

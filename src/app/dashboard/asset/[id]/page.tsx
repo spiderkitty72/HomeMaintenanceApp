@@ -108,7 +108,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         trigger={
                             <Button variant="outline" size="sm">
                                 <Settings className="h-4 w-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Settings</span>
+                                <span className="hidden sm:inline">Edit Asset</span>
                             </Button>
                         } 
                     />
