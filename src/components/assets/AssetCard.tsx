@@ -18,15 +18,16 @@ import { isScheduleDue } from "@/lib/predictions";
 import { dismissReminder } from "@/lib/actions/schedules";
 import { Bell } from "lucide-react";
 import { formatHouseUsage } from "@/lib/utils";
+import { toast } from "sonner";
+import { toggleAssetArchived } from "@/lib/actions/assets";
 
 interface AssetCardProps {
     asset: any;
     currentUserId?: string;
-    onDelete?: (id: string) => void;
     maxDaysToEstimate?: number;
 }
 
-export function AssetCard({ asset, currentUserId, onDelete, maxDaysToEstimate = 30 }: AssetCardProps) {
+export function AssetCard({ asset, currentUserId, maxDaysToEstimate = 30 }: AssetCardProps) {
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
     const [showReminders, setShowReminders] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -135,13 +136,19 @@ export function AssetCard({ asset, currentUserId, onDelete, maxDaysToEstimate = 
                                     />
                                 </div>
                                 <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={(e) => {
+                                    onClick={async (e) => {
                                         e.stopPropagation();
-                                        onDelete?.(asset.id);
+                                        if (window.confirm(`Are you sure you want to archive "${asset.name}"?`)) {
+                                            try {
+                                                await toggleAssetArchived(asset.id, true);
+                                                toast.success("Asset archived successfully");
+                                            } catch (error: any) {
+                                                toast.error(error.message || "Failed to archive asset");
+                                            }
+                                        }
                                     }}
                                 >
-                                    Delete
+                                    Archive
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

@@ -5,22 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface AssetPartsListProps {
     parts: any[];
     assets: any[];
+    assetId: string;
 }
 
-export function AssetPartsList({ parts, assets }: AssetPartsListProps) {
+export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) {
     if (parts.length === 0) {
         return (
             <Card>
                 <CardContent className="py-12 text-center text-muted-foreground italic">
                     <Package className="h-12 w-12 mx-auto mb-4 opacity-20" />
                     <p>No parts assigned to this asset yet.</p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        <AddPartDialog assets={assets} preselectedAssetId={assetId} />
                         <Link href="/dashboard/parts" className="text-primary hover:underline text-sm font-medium">
-                            Go to Parts Catalog
+                            Or browse Parts Catalog
                         </Link>
                     </div>
                 </CardContent>
@@ -29,7 +32,19 @@ export function AssetPartsList({ parts, assets }: AssetPartsListProps) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Compatible Parts</h3>
+                <div className="flex items-center gap-2">
+                    <AddPartDialog assets={assets} preselectedAssetId={assetId} />
+                    <Link href="/dashboard/parts">
+                        <Button variant="outline" size="sm" className="hidden sm:flex">
+                            Go to Catalog
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {parts.map((part) => (
                 <Card key={part.id} className="overflow-hidden hover:shadow-md transition-shadow group">
                     <CardContent className="p-0">
@@ -92,6 +107,7 @@ export function AssetPartsList({ parts, assets }: AssetPartsListProps) {
                     </CardContent>
                 </Card>
             ))}
+            </div>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,6 +33,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/common/ImageUpload";
+import { AddPartDialog } from "@/components/parts/AddPartDialog";
 
 const purchaseItemSchema = z.object({
     partId: z.string().min(1, "Please select a part"),
@@ -51,11 +52,17 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 interface AddPurchaseDialogProps {
     parts: any[];
+    assets?: any[];
 }
 
-export function AddPurchaseDialog({ parts }: AddPurchaseDialogProps) {
+export function AddPurchaseDialog({ parts, assets = [] }: AddPurchaseDialogProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [localParts, setLocalParts] = useState(parts);
+
+    useEffect(() => {
+        setLocalParts(parts);
+    }, [parts]);
 
     const form = useForm<PurchaseFormValues>({
         resolver: zodResolver(purchaseSchema) as any,
@@ -138,9 +145,17 @@ export function AddPurchaseDialog({ parts }: AddPurchaseDialogProps) {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <FormLabel>Items</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                                    <Plus className="h-3 w-3 mr-1" /> Add Item
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <AddPartDialog 
+                                        assets={assets} 
+                                        onSuccess={(newPart) => {
+                                            setLocalParts(prev => [...prev, newPart].sort((a, b) => a.name.localeCompare(b.name)));
+                                        }}
+                                    />
+                                    <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                                        <Plus className="h-3 w-3 mr-1" /> Add Row
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="space-y-3">
@@ -155,7 +170,7 @@ export function AddPurchaseDialog({ parts }: AddPurchaseDialogProps) {
                                                     <Select
                                                         onValueChange={(val) => {
                                                             field.onChange(val);
-                                                            const p = parts.find(x => x.id === val);
+                                                            const p = localParts.find(x => x.id === val);
                                                             if (p) {
                                                                 form.setValue(`items.${index}.costPerUnit`, p.defaultCost);
                                                             }
@@ -168,7 +183,7 @@ export function AddPurchaseDialog({ parts }: AddPurchaseDialogProps) {
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            {parts.map((part) => (
+                                                            {localParts.map((part) => (
                                                                 <SelectItem key={part.id} value={part.id}>
                                                                     {part.name} {part.partNumber ? `(${part.partNumber})` : ""}
                                                                 </SelectItem>

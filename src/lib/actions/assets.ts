@@ -76,6 +76,7 @@ export async function getAssets() {
 
     return await prisma.asset.findMany({
         where: {
+            isArchived: false,
             OR: [
                 { userId: session.user.id },
                 { sharedWith: { some: { userId: session.user.id } } },
@@ -288,4 +289,31 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
         console.error("UPDATE_ASSET_ERROR:", error);
         throw error;
     }
+}
+
+export async function toggleAssetArchived(id: string, isArchived: boolean) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    const existingAsset = await prisma.asset.findUnique({
+        where: { id },
+    });
+
+    const isAdmin = (session.user as any).role === "ADMIN";
+    const isOwner = existingAsset?.userId === session.user.id;
+
+    if (!existingAsset || (!isOwner && !isAdmin)) {
+        throw new Error("Unauthorized to update this asset");
+    }
+
+    await prisma.asset.update({
+        where: { id },
+        data: { isArchived },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/asset/${id}`);
+    revalidatePath("/dashboard/admin");
 }

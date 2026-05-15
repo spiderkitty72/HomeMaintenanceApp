@@ -40,7 +40,7 @@ export async function createPart(data: z.infer<typeof PartSchema>) {
         },
     });
 
-    revalidatePath("/dashboard/parts");
+    revalidatePath("/dashboard", "layout");
     return part;
 }
 
@@ -68,6 +68,14 @@ export async function getParts() {
                             }
                         }
                     }
+                }
+            ],
+            AND: [
+                {
+                    OR: [
+                        { compatibilities: { none: {} } },
+                        { compatibilities: { some: { asset: { isArchived: false } } } }
+                    ]
                 }
             ]
         },
@@ -119,7 +127,7 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
         },
     });
 
-    revalidatePath("/dashboard/parts");
+    revalidatePath("/dashboard", "layout");
     return part;
 }
 
@@ -147,7 +155,7 @@ export async function deletePart(id: string) {
         where: { id },
     });
 
-    revalidatePath("/dashboard/parts");
+    revalidatePath("/dashboard", "layout");
 }
 
 export async function getAllPartsSystem() {

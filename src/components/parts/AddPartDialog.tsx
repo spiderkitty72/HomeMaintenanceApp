@@ -53,9 +53,11 @@ interface AddPartDialogProps {
     mode?: "add" | "edit";
     part?: any;
     assets: any[];
+    preselectedAssetId?: string;
+    onSuccess?: (part: any) => void;
 }
 
-export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps) {
+export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, onSuccess }: AddPartDialogProps) {
     const [open, setOpen] = useState(false);
 
     const form = useForm<PartFormValues>({
@@ -65,7 +67,7 @@ export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps
             partNumber: part?.partNumber || "",
             manufacturer: part?.manufacturer || "",
             compatibleType: part?.compatibleType || "",
-            assetIds: part?.compatibilities?.map((c: any) => c.assetId) || [],
+            assetIds: part?.compatibilities?.map((c: any) => c.assetId) || (preselectedAssetId ? [preselectedAssetId] : []),
             defaultCost: part?.defaultCost || 0,
             unitOfMeasure: part?.unitOfMeasure || "pcs",
             quantityOnHand: part?.quantityOnHand || 0,
@@ -81,11 +83,13 @@ export function AddPartDialog({ mode = "add", part, assets }: AddPartDialogProps
             };
 
             if (mode === "edit" && part) {
-                await updatePart(part.id, submissionValues);
+                const updatedPart = await updatePart(part.id, submissionValues);
                 toast.success("Part updated");
+                onSuccess?.(updatedPart);
             } else {
-                await createPart(submissionValues);
+                const newPart = await createPart(submissionValues);
                 toast.success("Part added to catalog");
+                onSuccess?.(newPart);
             }
             setOpen(false);
             if (mode === "add") form.reset();

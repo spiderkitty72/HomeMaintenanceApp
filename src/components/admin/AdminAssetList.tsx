@@ -12,9 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
-import { deleteAsset } from "@/lib/actions/assets";
+import { deleteAsset, toggleAssetArchived } from "@/lib/actions/assets";
 import { toast } from "sonner";
-import { Car, Home, UtilityPole, Trash2, User, Search, Edit2, Filter, Shield } from "lucide-react";
+import { Car, Home, UtilityPole, Trash2, User, Search, Edit2, Filter, Shield, Archive, ArchiveRestore } from "lucide-react";
 import { ManageAssetAccessDialog } from "./ManageAssetAccessDialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +47,15 @@ export function AdminAssetList({ assets, allUsers }: AdminAssetListProps) {
             toast.success("Asset deleted successfully");
         } catch (error: any) {
             toast.error(error.message || "Failed to delete asset");
+        }
+    };
+
+    const handleToggleArchive = async (id: string, isArchived: boolean, name: string) => {
+        try {
+            await toggleAssetArchived(id, !isArchived);
+            toast.success(`Asset "${name}" ${isArchived ? "unarchived" : "archived"} successfully`);
+        } catch (error: any) {
+            toast.error(error.message || `Failed to ${isArchived ? "unarchive" : "archive"} asset`);
         }
     };
 
@@ -113,6 +122,9 @@ export function AdminAssetList({ assets, allUsers }: AdminAssetListProps) {
                                             )}
                                         </div>
                                         <span>{asset.name}</span>
+                                        {asset.isArchived && (
+                                            <Badge variant="secondary" className="ml-2 text-xs py-0 h-5">Archived</Badge>
+                                        )}
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -148,6 +160,15 @@ export function AdminAssetList({ assets, allUsers }: AdminAssetListProps) {
                                             asset={asset}
                                             allUsers={allUsers}
                                         />
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8"
+                                            title={asset.isArchived ? "Unarchive Asset" : "Archive Asset"}
+                                            onClick={() => handleToggleArchive(asset.id, asset.isArchived, asset.name)}
+                                        >
+                                            {asset.isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                                        </Button>
                                         <Button
                                             size="icon"
                                             variant="ghost"
