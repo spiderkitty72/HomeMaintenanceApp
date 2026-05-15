@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug } from "lucide-react";
 import { MobileNav } from "./MobileNav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AboutDialog } from "./AboutDialog";
 
 export async function Navbar() {
     const session = await auth();
@@ -33,6 +34,9 @@ export async function Navbar() {
                 <Bug className="h-4 w-4 md:hidden" />
                 <span>Report Bug</span>
             </a>
+            <div className="flex items-center">
+                <AboutDialog />
+            </div>
             <Link href="/dashboard/settings" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
                 <Settings className="h-4 w-4 md:hidden" />
                 <span>Settings</span>

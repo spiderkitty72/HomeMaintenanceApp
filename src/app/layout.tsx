@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 import { Toaster } from "@/components/ui/sonner";
-import { VersionDisplay } from "@/components/VersionDisplay";
+
 import { ThemeProvider } from "@/components/theme-provider";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -81,7 +81,7 @@ export default async function RootLayout({
           <div className="min-h-screen bg-background text-foreground">
             {children}
           </div>
-          <VersionDisplay />
+
           <Toaster position="top-center" />
         </ThemeProvider>
       </body>
