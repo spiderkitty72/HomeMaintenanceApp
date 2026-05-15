@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:build": "npm version patch && docker-compose build",
+    "docker:up": "npm run docker:build && docker-compose up -d",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

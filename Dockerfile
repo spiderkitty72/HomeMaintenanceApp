@@ -18,8 +18,6 @@ ARG DATABASE_URL="file:/app/data/dev.db"
 # Copy source and prisma
 COPY . .
 
-# Increment version during build
-RUN node increment-version.js
 
 # Generate Prisma client
 RUN npx prisma generate
