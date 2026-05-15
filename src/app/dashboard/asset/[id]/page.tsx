@@ -25,6 +25,8 @@ import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getAssets } from "@/lib/actions/assets";
 import { formatHouseUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
+import { Badge } from "@/components/ui/badge";
+import { AddPartDialog } from "@/components/parts/AddPartDialog";
 
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -84,6 +86,11 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         <span>Assets</span>
                         <span>/</span>
                         <span className="text-foreground font-medium">{asset.type}</span>
+                        {asset.isArchived && (
+                            <Badge variant="secondary" className="ml-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500">
+                                Archived
+                            </Badge>
+                        )}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight">{asset.name}</h1>
                 </div>
@@ -273,7 +280,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                             <SpecList assetId={asset.id} specs={specs} />
                         </TabsContent>
                         <TabsContent value="parts">
-                            <AssetPartsList parts={compatibleParts} assets={allAssets} />
+                            <AssetPartsList parts={compatibleParts} assets={allAssets} assetId={asset.id} />
                         </TabsContent>
                     </Tabs>
                 </div>

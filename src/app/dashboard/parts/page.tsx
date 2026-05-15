@@ -33,7 +33,7 @@ export default async function PartsPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <AddPurchaseDialog parts={parts} />
+                    <AddPurchaseDialog parts={parts} assets={assets} />
                     <AddPartDialog assets={assets} />
                 </div>
             </div>

@@ -113,6 +113,7 @@ model Asset {
   usageUpdatedAt DateTime @default(now())
   dailyUsage     Float    @default(0)
   image          String?
+  isArchived     Boolean  @default(false)
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
