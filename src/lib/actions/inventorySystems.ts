@@ -19,15 +19,17 @@ export async function getSystemAccessLevel(systemId: string): Promise<"OWNER" | 
   const session = await auth();
   if (!session?.user?.id) return null;
 
+  const userId = session.user.id;
+
   const system = await prisma.inventorySystem.findUnique({
     where: { id: systemId },
     include: { sharedWith: true },
   });
 
   if (!system) return null;
-  if (system.userId === session.user.id || (session.user as any).role === "ADMIN") return "OWNER";
+  if (system.userId === userId || (session.user as any).role === "ADMIN") return "OWNER";
 
-  const access = system.sharedWith.find((a) => a.userId === session.user.id);
+  const access = system.sharedWith.find((a) => a.userId === userId);
   if (!access) return null;
   return access.permission as "MANAGE" | "VIEW";
 }
