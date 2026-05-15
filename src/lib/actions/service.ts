@@ -18,11 +18,11 @@ const ServiceRecordSchema = z.object({
     totalCost: z.number(),
     vendor: z.string().optional(),
     image: z.string().optional(),
-    inventorySystemId: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
         costPerUnit: z.number(),
+        inventorySystemId: z.string().optional(),
     })),
     fulfilledScheduleIds: z.array(z.string()).optional(),
 });
@@ -43,12 +43,12 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                 notes: data.notes,
                 totalCost: data.totalCost,
                 vendor: data.vendor,
-                inventorySystemId: data.inventorySystemId,
                 parts: {
                     create: data.parts.map(p => ({
                         partId: p.partId,
                         quantity: p.quantity,
                         costPerUnit: p.costPerUnit,
+                        inventorySystemId: p.inventorySystemId || null,
                     })),
                 },
             },
@@ -67,13 +67,13 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         // Update asset current usage
         await recalculateAssetUsage(tx as any, data.assetId);
 
-        // Deduct from inventory
-        if (data.inventorySystemId) {
-            for (const p of data.parts) {
+        // Deduct from inventory per-part
+        for (const p of data.parts) {
+            if (p.inventorySystemId) {
                 await tx.inventoryItem.upsert({
                     where: {
                         inventorySystemId_partId: {
-                            inventorySystemId: data.inventorySystemId,
+                            inventorySystemId: p.inventorySystemId,
                             partId: p.partId,
                         }
                     },
@@ -83,7 +83,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                         },
                     },
                     create: {
-                        inventorySystemId: data.inventorySystemId,
+                        inventorySystemId: p.inventorySystemId,
                         partId: p.partId,
                         quantityOnHand: -p.quantity,
                     }
@@ -166,6 +166,7 @@ export async function getServiceRecord(id: string) {
             parts: {
                 include: {
                     part: true,
+                    inventorySystem: true,
                 },
             },
             attachments: true,
@@ -235,13 +236,14 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
     const { image, parts, fulfilledScheduleIds, ...serviceData } = data;
 
     const result = await prisma.$transaction(async (tx) => {
-        // 1. Revert current inventory changes
-        if (existing.inventorySystemId) {
-            for (const p of existing.parts) {
+        // 1. Revert current inventory changes per-part (fallback to record-level for old records)
+        for (const p of existing.parts) {
+            const sysId = p.inventorySystemId ?? existing.inventorySystemId;
+            if (sysId) {
                 await tx.inventoryItem.update({
                     where: {
                         inventorySystemId_partId: {
-                            inventorySystemId: existing.inventorySystemId,
+                            inventorySystemId: sysId,
                             partId: p.partId,
                         }
                     },
@@ -265,24 +267,24 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
             data: {
                 ...serviceData,
                 date: new Date(serviceData.date),
-                inventorySystemId: data.inventorySystemId,
                 parts: {
                     create: parts.map(p => ({
                         partId: p.partId,
                         quantity: p.quantity,
                         costPerUnit: p.costPerUnit,
+                        inventorySystemId: p.inventorySystemId || null,
                     })),
                 },
             },
         });
 
-        // 4. Apply new inventory changes
-        if (data.inventorySystemId) {
-            for (const p of parts) {
+        // 4. Apply new inventory changes per-part
+        for (const p of parts) {
+            if (p.inventorySystemId) {
                 await tx.inventoryItem.upsert({
                     where: {
                         inventorySystemId_partId: {
-                            inventorySystemId: data.inventorySystemId,
+                            inventorySystemId: p.inventorySystemId,
                             partId: p.partId,
                         }
                     },
@@ -292,7 +294,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                         },
                     },
                     create: {
-                        inventorySystemId: data.inventorySystemId,
+                        inventorySystemId: p.inventorySystemId,
                         partId: p.partId,
                         quantityOnHand: -p.quantity,
                     }
@@ -381,13 +383,14 @@ export async function deleteServiceRecord(id: string) {
     }
 
     await prisma.$transaction(async (tx) => {
-        // Revert inventory changes
-        if (existing.inventorySystemId) {
-            for (const p of existing.parts) {
+        // Revert inventory changes per-part (fallback to record-level for old records)
+        for (const p of existing.parts) {
+            const sysId = p.inventorySystemId ?? existing.inventorySystemId;
+            if (sysId) {
                 await tx.inventoryItem.update({
                     where: {
                         inventorySystemId_partId: {
-                            inventorySystemId: existing.inventorySystemId,
+                            inventorySystemId: sysId,
                             partId: p.partId,
                         }
                     },

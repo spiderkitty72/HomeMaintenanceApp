@@ -26,11 +26,11 @@ const serviceSchema = z.object({
     totalCost: z.coerce.number().min(0),
     vendor: z.string().optional(),
     image: z.string().optional(),
-    inventorySystemId: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string().min(1, "Part is required"),
         quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0"),
         costPerUnit: z.coerce.number().min(0),
+        inventorySystemId: z.string().optional(),
     })),
     fulfilledScheduleIds: z.array(z.string()).optional(),
 });
@@ -65,9 +65,9 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 partId: p.partId,
                 quantity: p.quantity,
                 costPerUnit: p.costPerUnit,
+                inventorySystemId: p.inventorySystemId ?? "",
             })) || [],
             image: serviceRecord?.attachments?.[0]?.url ?? "",
-            inventorySystemId: serviceRecord?.inventorySystemId ?? inventorySystems[0]?.id ?? "",
             fulfilledScheduleIds: [],
         },
     });
@@ -100,6 +100,10 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 assetId,
                 date: new Date(values.date),
                 fulfilledScheduleIds: values.fulfilledScheduleIds || [],
+                parts: values.parts.map(p => ({
+                    ...p,
+                    inventorySystemId: p.inventorySystemId || undefined,
+                })),
             };
 
             if (isEditing && serviceRecord) {
@@ -112,13 +116,14 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
             setOpen(false);
             if (!isEditing) form.reset();
         } catch (error) {
+            console.error("Service record error:", error);
             toast.error(`Failed to ${isEditing ? "update" : "save"} service record`);
         }
     }
 
     const addPart = () => {
         const currentParts = form.getValues("parts");
-        form.setValue("parts", [...currentParts, { partId: "", quantity: 1, costPerUnit: 0 }]);
+        form.setValue("parts", [...currentParts, { partId: "", quantity: 1, costPerUnit: 0, inventorySystemId: "" }]);
     };
 
     const removePart = (index: number) => {
@@ -280,105 +285,108 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center justify-between">
                                 <FormLabel>Parts Used</FormLabel>
-                                <div className="flex flex-1 items-center gap-2 max-w-sm">
-                                    <FormField
-                                        control={form.control}
-                                        name="inventorySystemId"
-                                        render={({ field }) => (
-                                            <FormItem className="flex-1 space-y-0">
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="h-8 text-xs bg-muted/50">
-                                                            <SelectValue placeholder="Deduct from system..." />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {inventorySystems.length === 0 && (
-                                                            <SelectItem value="none" disabled>No systems</SelectItem>
-                                                        )}
-                                                        {inventorySystems.map((s) => (
-                                                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="button" variant="outline" size="sm" onClick={addPart} className="h-8 text-xs shrink-0">
-                                        <Plus className="h-3 w-3 mr-1" /> Add Part
-                                    </Button>
-                                </div>
+                                <Button type="button" variant="outline" size="sm" onClick={addPart} className="h-8 text-xs">
+                                    <Plus className="h-3 w-3 mr-1" /> Add Part
+                                </Button>
                             </div>
                             <div className="space-y-3">
                                 {form.watch("parts").map((_, index) => (
-                                    <div key={index} className="flex gap-3 items-end border p-3 rounded-md bg-muted/30">
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.partId`}
-                                            render={({ field }) => (
-                                                <FormItem className="flex-1">
-                                                    <Select
-                                                        onValueChange={(value) => {
-                                                            field.onChange(value);
-                                                            const selectedPart = availableParts.find(p => p.id === value);
-                                                            if (selectedPart) {
-                                                                form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
-                                                            }
-                                                        }}
-                                                        defaultValue={field.value}
-                                                    >
+                                    <div key={index} className="border p-3 rounded-md bg-muted/30 space-y-2">
+                                        <div className="flex gap-3 items-end">
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.partId`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-1">
+                                                        <Select
+                                                            onValueChange={(value) => {
+                                                                field.onChange(value);
+                                                                const selectedPart = availableParts.find(p => p.id === value);
+                                                                if (selectedPart) {
+                                                                    form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
+                                                                }
+                                                            }}
+                                                            defaultValue={field.value}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select a part" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {availableParts.map((p) => (
+                                                                    <SelectItem key={p.id} value={p.id}>
+                                                                        {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.quantity`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-20">
                                                         <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select a part" />
-                                                            </SelectTrigger>
+                                                            <Input type="number" step="any" placeholder="Qty" {...field} />
                                                         </FormControl>
-                                                        <SelectContent>
-                                                            {availableParts.map((p) => (
-                                                                <SelectItem key={p.id} value={p.id}>
-                                                                    {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.quantity`}
-                                            render={({ field }) => (
-                                                <FormItem className="w-20">
-                                                    <FormControl>
-                                                        <Input type="number" step="any" placeholder="Qty" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.costPerUnit`}
-                                            render={({ field }) => (
-                                                <FormItem className="w-24">
-                                                    <FormControl>
-                                                        <Input type="number" step="0.01" placeholder="Cost" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-destructive h-10 w-10"
-                                            onClick={() => removePart(index)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.costPerUnit`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-24">
+                                                        <FormControl>
+                                                            <Input type="number" step="0.01" placeholder="Cost" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-destructive h-10 w-10"
+                                                onClick={() => removePart(index)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        {inventorySystems.length > 0 && (
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.inventorySystemId`}
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-0">
+                                                        <Select
+                                                            onValueChange={(val) => field.onChange(val === "__none__" ? "" : val)}
+                                                            value={field.value || "__none__"}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger className="h-7 text-xs bg-background">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="__none__">No inventory deduction</SelectItem>
+                                                                {inventorySystems.map((s) => (
+                                                                    <SelectItem key={s.id} value={s.id}>Deduct from: {s.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                     </div>
                                 ))}
                                 {form.watch("parts").length === 0 && (

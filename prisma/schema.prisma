@@ -59,6 +59,8 @@ model User {
   assetSpecTypes AssetSpecType[]
   inventorySystems InventorySystem[]
   inventorySystemAccess InventorySystemAccess[]
+  invoicesSent     Invoice[] @relation("InvoicesFrom")
+  invoicesReceived Invoice[] @relation("InvoicesTo")
 }
 
 model VerificationToken {
@@ -185,6 +187,7 @@ model Part {
   purchases      PartPurchaseItem[]
   compatibilities AssetPartCompatibility[]
   inventoryItems InventoryItem[]
+  invoiceLineItems InvoiceLineItem[]
 }
 
 model PartPurchase {
@@ -238,6 +241,7 @@ model ServiceRecord {
   inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
   parts          ServicePart[]
   attachments    Attachment[]
+  invoices       Invoice[]
 }
 
 model ServicePart {
@@ -322,6 +326,7 @@ model InventorySystem {
   serviceParts   ServicePart[]
   partPurchases  PartPurchase[]
   sharedWith  InventorySystemAccess[]
+  invoices    Invoice[]
 }
 
 model InventoryItem {
@@ -346,4 +351,35 @@ model InventorySystemAccess {
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([inventorySystemId, userId])
+}
+
+model Invoice {
+  id                String           @id @default(cuid())
+  invoiceNumber     String           @unique
+  fromUserId        String
+  toUserId          String
+  serviceRecordId   String
+  inventorySystemId String
+  status            String           @default("UNPAID")
+  notes             String?
+  issuedAt          DateTime         @default(now())
+  paidAt            DateTime?
+
+  fromUser          User             @relation("InvoicesFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser            User             @relation("InvoicesTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  serviceRecord     ServiceRecord    @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  inventorySystem   InventorySystem  @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  lineItems         InvoiceLineItem[]
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  partId      String?
+  partName    String
+  quantity    Float
+  unitCost    Float
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  part        Part?    @relation(fields: [partId], references: [id], onDelete: SetNull)
 }
