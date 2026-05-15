@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug } from "lucide-react";
+import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug, FileText } from "lucide-react";
 import { MobileNav } from "./MobileNav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AboutDialog } from "./AboutDialog";
@@ -18,6 +18,10 @@ export async function Navbar() {
             <Link href="/dashboard/parts" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
                 <Package className="h-4 w-4 md:hidden" />
                 <span>Parts</span>
+            </Link>
+            <Link href="/dashboard/invoices" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
+                <FileText className="h-4 w-4 md:hidden" />
+                <span>Invoices</span>
             </Link>
             {session && (session.user as any).role === "ADMIN" && (
                 <Link href="/dashboard/admin" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">

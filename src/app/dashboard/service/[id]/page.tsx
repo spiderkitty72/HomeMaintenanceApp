@@ -1,4 +1,6 @@
 import { getServiceRecord } from "@/lib/actions/service";
+import { getInventorySystems } from "@/lib/actions/inventorySystems";
+import { getInvoicableSystemsForServiceRecord } from "@/lib/actions/invoices";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -14,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CreateInvoiceButton } from "@/components/invoices/CreateInvoiceButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddServiceDialog } from "@/components/service/AddServiceDialog";
@@ -25,7 +28,11 @@ import { checkPermission } from "@/lib/permissions";
 export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     const { id } = await params;
-    const record = await getServiceRecord(id);
+    const [record, inventorySystems, invoicableSystems] = await Promise.all([
+        getServiceRecord(id),
+        getInventorySystems(),
+        getInvoicableSystemsForServiceRecord(id),
+    ]);
 
     if (!record || !session?.user?.id) {
         notFound();
@@ -67,6 +74,19 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                         <Wrench className="h-3.5 w-3.5 mr-1.5" />
                         Service Record
                     </Badge>
+                    {invoicableSystems.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {invoicableSystems.map(({ system, existingInvoice }: any) => (
+                                <CreateInvoiceButton
+                                    key={system.id}
+                                    serviceRecordId={record.id}
+                                    inventorySystemId={system.id}
+                                    inventorySystemName={system.name}
+                                    existingInvoice={existingInvoice}
+                                />
+                            ))}
+                        </div>
+                    )}
                     {(canEdit || canDelete) && (
                         <div className="flex items-center gap-2 ml-2 border-l pl-4 py-1">
                             {canEdit && (
@@ -75,6 +95,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                     trackingMethod={record.asset.trackingMethod}
                                     schedules={record.asset.schedules as any}
                                     serviceRecord={record}
+                                    inventorySystems={inventorySystems}
                                 />
                             )}
                             {canDelete && (
@@ -177,6 +198,11 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                                 <p className="text-sm text-muted-foreground">
                                                     Quantity: {p.quantity} × ${p.costPerUnit.toFixed(2)}
                                                 </p>
+                                                {(p as any).inventorySystem && (
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        Deducted from: {(p as any).inventorySystem.name}
+                                                    </p>
+                                                )}
                                             </div>
                                             <p className="font-mono font-bold">
                                                 ${(p.quantity * p.costPerUnit).toFixed(2)}
