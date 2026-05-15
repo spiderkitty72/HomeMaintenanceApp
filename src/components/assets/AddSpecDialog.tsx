@@ -92,7 +92,9 @@ export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
                     </Button>
                 ) : (
                     <Button className="gap-2">
-                        <Plus className="h-4 w-4" /> Add Spec
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline">Add Spec</span>
+                        <span className="sm:hidden">Add</span>
                     </Button>
                 )}
             </DialogTrigger>

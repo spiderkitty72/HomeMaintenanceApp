@@ -9,6 +9,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     Table,
     TableBody,
     TableCell,
@@ -21,10 +28,12 @@ interface AssetPartsListProps {
     parts: any[];
     assets: any[];
     assetId: string;
+    inventorySystems: any[];
 }
 
-export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) {
+export function AssetPartsList({ parts, assets, assetId, inventorySystems }: AssetPartsListProps) {
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || "none");
 
     const filteredAndSortedParts = parts
         .filter((part) => {
@@ -64,7 +73,18 @@ export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) 
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="max-w-md"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select value={selectedSystemId} onValueChange={setSelectedSystemId}>
+                        <SelectTrigger className="w-[180px] bg-background">
+                            <SelectValue placeholder="System" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {inventorySystems.length === 0 && <SelectItem value="none">No Systems</SelectItem>}
+                            {inventorySystems.map(system => (
+                                <SelectItem key={system.id} value={system.id}>{system.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <AddPartDialog assets={assets} preselectedAssetId={assetId} />
                     <Link href="/dashboard/parts">
                         <Button variant="outline" size="sm" className="hidden sm:flex">
@@ -95,11 +115,12 @@ export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) 
                                         ) : (
                                             <Package className="h-5 w-5 text-muted-foreground/50" />
                                         )}
-                                        {part.quantityOnHand <= 0 && (
-                                            <div className="absolute inset-0 bg-destructive/10 rounded flex items-center justify-center">
-                                                <AlertCircle className="h-4 w-4 text-destructive" />
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                            const stock = systemItem?.quantityOnHand ?? 0;
+                                            if (stock <= 0) return <AlertCircle className="h-4 w-4 text-destructive" />;
+                                            return null;
+                                        })()}
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm leading-tight">{part.name}</h4>
@@ -114,10 +135,24 @@ export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) 
                             </div>
                             <div className="flex justify-between items-center pt-3 border-t border-muted text-sm">
                                 <div className="flex items-center gap-1.5">
-                                    <span className={`font-bold ${part.quantityOnHand > 0 ? 'text-foreground' : 'text-destructive'}`}>
-                                        {part.quantityOnHand}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground uppercase">{part.unitOfMeasure}</span>
+                                    {(() => {
+                                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                        const stock = systemItem?.quantityOnHand ?? 0;
+                                        const isTracked = !!systemItem;
+
+                                        if (!isTracked && selectedSystemId !== "none") {
+                                            return <span className="text-muted-foreground text-[10px] italic">Not tracked</span>;
+                                        }
+
+                                        return (
+                                            <>
+                                                <span className={`font-bold ${stock > 0 ? 'text-foreground' : 'text-destructive'}`}>
+                                                    {stock}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground uppercase">{part.unitOfMeasure}</span>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="font-mono font-bold">
                                     ${part.defaultCost?.toFixed(2) || "0.00"}
@@ -162,11 +197,12 @@ export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) 
                                             ) : (
                                                 <Package className="h-4 w-4 text-muted-foreground/50" />
                                             )}
-                                            {part.quantityOnHand <= 0 && (
-                                                <div className="absolute inset-0 bg-destructive/10 rounded flex items-center justify-center">
-                                                    <AlertCircle className="h-4 w-4 text-destructive" />
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                                const stock = systemItem?.quantityOnHand ?? 0;
+                                                if (stock <= 0) return <AlertCircle className="h-4 w-4 text-destructive" />;
+                                                return null;
+                                            })()}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -190,12 +226,26 @@ export function AssetPartsList({ parts, assets, assetId }: AssetPartsListProps) 
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1.5">
-                                            <span className={`text-sm font-bold ${part.quantityOnHand > 0 ? 'text-foreground' : 'text-destructive font-black'}`}>
-                                                {part.quantityOnHand}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground uppercase font-medium mt-1">
-                                                {part.unitOfMeasure}
-                                            </span>
+                                            {(() => {
+                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                                const stock = systemItem?.quantityOnHand ?? 0;
+                                                const isTracked = !!systemItem;
+
+                                                if (!isTracked && selectedSystemId !== "none") {
+                                                    return <span className="text-muted-foreground text-[10px] italic">Not tracked</span>;
+                                                }
+
+                                                return (
+                                                    <>
+                                                        <span className={`text-sm font-bold ${stock > 0 ? 'text-foreground' : 'text-destructive font-black'}`}>
+                                                            {stock}
+                                                        </span>
+                                                        <span className="text-[10px] text-muted-foreground uppercase font-medium mt-1">
+                                                            {part.unitOfMeasure}
+                                                        </span>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </TableCell>
                                     <TableCell>

@@ -8,6 +8,7 @@ import { getAllFuelRecordsSystem } from "@/lib/actions/fuel";
 import { getAllServiceRecordsSystem } from "@/lib/actions/service";
 import { getAllSpecTypesSystem } from "@/lib/actions/specs";
 import { getAllPurchasesSystem } from "@/lib/actions/inventory";
+import { getAllInventorySystems } from "@/lib/actions/inventorySystems";
 import { UserList } from "@/components/admin/UserList";
 import { GroupList } from "@/components/admin/GroupList";
 import { AdminInventory } from "@/components/admin/AdminInventory";
@@ -16,6 +17,7 @@ import { AdminFuelList } from "@/components/admin/AdminFuelList";
 import { AdminServiceList } from "@/components/admin/AdminServiceList";
 import { AdminSpecTypeList } from "@/components/admin/AdminSpecTypeList";
 import { AdminPurchaseList } from "@/components/admin/AdminPurchaseList";
+import { InventorySystemsTab } from "@/components/admin/InventorySystemsTab";
 import { AdminSystemTab } from "@/components/admin/AdminSystemTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +32,7 @@ export default async function AdminDashboardPage() {
         redirect("/dashboard");
     }
 
-    const [users, groups, parts, assets, fuelRecords, serviceRecords, specTypes, purchases] = await Promise.all([
+    const [users, groups, parts, assets, fuelRecords, serviceRecords, specTypes, purchases, inventorySystems] = await Promise.all([
         getUsers(),
         getGroups(),
         getAllPartsSystem(),
@@ -39,6 +41,7 @@ export default async function AdminDashboardPage() {
         getAllServiceRecordsSystem(),
         getAllSpecTypesSystem(),
         getAllPurchasesSystem(),
+        getAllInventorySystems(),
     ]);
 
     return (
@@ -68,6 +71,9 @@ export default async function AdminDashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="inventory" className="gap-2 flex-1 min-w-[100px]">
                         <PackageSearch className="h-4 w-4" /> Inventory
+                    </TabsTrigger>
+                    <TabsTrigger value="inventory_systems" className="gap-2 flex-1 min-w-[100px]">
+                        <Settings className="h-4 w-4" /> Systems
                     </TabsTrigger>
                     <TabsTrigger value="fuel" className="gap-2 flex-1 min-w-[100px]">
                         <Fuel className="h-4 w-4" /> Fuel
@@ -123,9 +129,13 @@ export default async function AdminDashboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AdminInventory parts={parts} allAssets={assets} />
+                            <AdminInventory parts={parts} allAssets={assets} systems={inventorySystems} />
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="inventory_systems" className="space-y-4">
+                    <InventorySystemsTab systems={inventorySystems} users={users} />
                 </TabsContent>
 
                 <TabsContent value="assets" className="space-y-4">

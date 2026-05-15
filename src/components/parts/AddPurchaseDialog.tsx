@@ -45,6 +45,7 @@ const purchaseSchema = z.object({
     vendor: z.string().optional(),
     date: z.string().min(1, "Date is required"),
     image: z.string().optional(),
+    inventorySystemId: z.string().optional(),
     items: z.array(purchaseItemSchema).min(1, "At least one item is required"),
 });
 
@@ -53,9 +54,10 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 interface AddPurchaseDialogProps {
     parts: any[];
     assets?: any[];
+    inventorySystems: any[];
 }
 
-export function AddPurchaseDialog({ parts, assets = [] }: AddPurchaseDialogProps) {
+export function AddPurchaseDialog({ parts, assets = [], inventorySystems }: AddPurchaseDialogProps) {
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localParts, setLocalParts] = useState(parts);
@@ -70,6 +72,7 @@ export function AddPurchaseDialog({ parts, assets = [] }: AddPurchaseDialogProps
             vendor: "",
             date: new Date().toISOString().split("T")[0],
             image: "",
+            inventorySystemId: inventorySystems[0]?.id || "",
             items: [{ partId: "", quantity: 1, costPerUnit: 0 }],
         },
     });
@@ -141,6 +144,35 @@ export function AddPurchaseDialog({ parts, assets = [] }: AddPurchaseDialogProps
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="inventorySystemId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Inventory System</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Where to add these items?" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {inventorySystems.length === 0 && (
+                                                <SelectItem value="none" disabled>No systems found</SelectItem>
+                                            )}
+                                            {inventorySystems.map((s) => (
+                                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription>
+                                        Stock levels will be increased in this system.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">

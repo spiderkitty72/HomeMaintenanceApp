@@ -22,6 +22,7 @@ import { Package, ListChecks } from "lucide-react";
 import { getAssetSpecs } from "@/lib/actions/specs";
 import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
+import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { getAssets } from "@/lib/actions/assets";
 import { formatHouseUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
@@ -60,7 +61,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         schedules,
         compatibleParts,
         specs,
-        allAssets
+        allAssets,
+        inventorySystems
     ] = await Promise.all([
         getServiceRecords(id),
         getFuelRecords(id),
@@ -68,7 +70,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         getSchedules(id),
         getCompatibleParts(id),
         getAssetSpecs(id),
-        getAssets()
+        getAssets(),
+        getInventorySystems()
     ]);
 
     // Find the most urgent reminder
@@ -102,7 +105,13 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         lastUsage={asset.currentUsage}
                         avgMpg={fuelStats?.avgMpg}
                     />
-                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} assetType={asset.type} schedules={schedules} />
+                    <AddServiceDialog 
+                        assetId={asset.id} 
+                        trackingMethod={asset.trackingMethod} 
+                        assetType={asset.type} 
+                        schedules={schedules} 
+                        inventorySystems={inventorySystems}
+                    />
                     <AddAssetDialog 
                         asset={asset as any} 
                         trigger={
@@ -279,7 +288,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                             <SpecList assetId={asset.id} specs={specs} />
                         </TabsContent>
                         <TabsContent value="parts">
-                            <AssetPartsList parts={compatibleParts} assets={allAssets} assetId={asset.id} />
+                            <AssetPartsList parts={compatibleParts} assets={allAssets} assetId={asset.id} inventorySystems={inventorySystems} />
                         </TabsContent>
                     </Tabs>
                 </div>

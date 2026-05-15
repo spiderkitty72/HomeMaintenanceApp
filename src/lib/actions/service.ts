@@ -18,6 +18,7 @@ const ServiceRecordSchema = z.object({
     totalCost: z.number(),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    inventorySystemId: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
@@ -42,6 +43,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                 notes: data.notes,
                 totalCost: data.totalCost,
                 vendor: data.vendor,
+                inventorySystemId: data.inventorySystemId,
                 parts: {
                     create: data.parts.map(p => ({
                         partId: p.partId,
@@ -66,15 +68,27 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         await recalculateAssetUsage(tx as any, data.assetId);
 
         // Deduct from inventory
-        for (const p of data.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        decrement: p.quantity,
+        if (data.inventorySystemId) {
+            for (const p of data.parts) {
+                await tx.inventoryItem.upsert({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: data.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    update: {
+                        quantityOnHand: {
+                            decrement: p.quantity,
+                        },
+                    },
+                    create: {
+                        inventorySystemId: data.inventorySystemId,
+                        partId: p.partId,
+                        quantityOnHand: -p.quantity,
+                    }
+                });
+            }
         }
 
         // Fulfill explicitly chosen schedules
@@ -222,15 +236,22 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
 
     const result = await prisma.$transaction(async (tx) => {
         // 1. Revert current inventory changes
-        for (const p of existing.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        increment: p.quantity,
+        if (existing.inventorySystemId) {
+            for (const p of existing.parts) {
+                await tx.inventoryItem.update({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: existing.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    data: {
+                        quantityOnHand: {
+                            increment: p.quantity,
+                        },
+                    },
+                });
+            }
         }
 
         // 2. Clear old parts links
@@ -244,6 +265,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
             data: {
                 ...serviceData,
                 date: new Date(serviceData.date),
+                inventorySystemId: data.inventorySystemId,
                 parts: {
                     create: parts.map(p => ({
                         partId: p.partId,
@@ -255,15 +277,27 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         });
 
         // 4. Apply new inventory changes
-        for (const p of parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        decrement: p.quantity,
+        if (data.inventorySystemId) {
+            for (const p of parts) {
+                await tx.inventoryItem.upsert({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: data.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    update: {
+                        quantityOnHand: {
+                            decrement: p.quantity,
+                        },
+                    },
+                    create: {
+                        inventorySystemId: data.inventorySystemId,
+                        partId: p.partId,
+                        quantityOnHand: -p.quantity,
+                    }
+                });
+            }
         }
 
         if (image !== undefined) {
@@ -348,15 +382,22 @@ export async function deleteServiceRecord(id: string) {
 
     await prisma.$transaction(async (tx) => {
         // Revert inventory changes
-        for (const p of existing.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        increment: p.quantity,
+        if (existing.inventorySystemId) {
+            for (const p of existing.parts) {
+                await tx.inventoryItem.update({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: existing.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    data: {
+                        quantityOnHand: {
+                            increment: p.quantity,
+                        },
+                    },
+                });
+            }
         }
 
         // Delete the record (cascade will handle servicePart and attachments)

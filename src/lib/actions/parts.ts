@@ -14,7 +14,6 @@ const PartSchema = z.object({
     assetIds: z.array(z.string()).optional(),
     defaultCost: z.coerce.number().min(0).default(0),
     unitOfMeasure: z.string().min(1, "Unit of measure is required").default("pcs"),
-    quantityOnHand: z.coerce.number().default(0),
     image: z.string().optional(),
 });
 
@@ -85,6 +84,16 @@ export async function getParts() {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                where: {
+                    inventorySystem: {
+                        userId: session.user.id
+                    }
+                },
+                include: {
+                    inventorySystem: true
+                }
+            }
         },
         orderBy: {
             name: "asc",
@@ -171,6 +180,15 @@ export async function getAllPartsSystem() {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                include: {
+                    inventorySystem: {
+                        include: {
+                            user: true
+                        }
+                    }
+                }
+            }
         },
         orderBy: {
             name: "asc",
@@ -288,6 +306,16 @@ export async function getCompatibleParts(assetId: string) {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                where: {
+                    inventorySystem: {
+                        userId: session.user.id
+                    }
+                },
+                include: {
+                    inventorySystem: true
+                }
+            }
         },
         orderBy: {
             name: "asc",
