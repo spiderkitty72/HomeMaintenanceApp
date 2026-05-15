@@ -26,6 +26,7 @@ const serviceSchema = z.object({
     totalCost: z.coerce.number().min(0),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    inventorySystemId: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string().min(1, "Part is required"),
         quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0"),
@@ -43,9 +44,10 @@ interface AddServiceDialogProps {
     trigger?: React.ReactNode;
     serviceRecord?: any; // Existing record for editing
     schedules?: any[]; // For explicitly fulfilling reminders
+    inventorySystems?: any[];
 }
 
-export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules, inventorySystems = [] }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
     const isEditing = !!serviceRecord;
@@ -65,6 +67,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 costPerUnit: p.costPerUnit,
             })) || [],
             image: serviceRecord?.attachments?.[0]?.url ?? "",
+            inventorySystemId: serviceRecord?.inventorySystemId ?? inventorySystems[0]?.id ?? "",
             fulfilledScheduleIds: [],
         },
     });
@@ -277,11 +280,36 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <FormLabel>Parts Used</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={addPart}>
-                                    <Plus className="h-3 w-3 mr-1" /> Add Part
-                                </Button>
+                                <div className="flex flex-1 items-center gap-2 max-w-sm">
+                                    <FormField
+                                        control={form.control}
+                                        name="inventorySystemId"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1 space-y-0">
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-8 text-xs bg-muted/50">
+                                                            <SelectValue placeholder="Deduct from system..." />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {inventorySystems.length === 0 && (
+                                                            <SelectItem value="none" disabled>No systems</SelectItem>
+                                                        )}
+                                                        {inventorySystems.map((s) => (
+                                                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="button" variant="outline" size="sm" onClick={addPart} className="h-8 text-xs shrink-0">
+                                        <Plus className="h-3 w-3 mr-1" /> Add Part
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-3">
                                 {form.watch("parts").map((_, index) => (

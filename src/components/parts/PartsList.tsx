@@ -15,12 +15,14 @@ import { AssignAssetDialog } from "@/components/parts/AssignAssetDialog";
 interface PartsListProps {
     parts: any[];
     assets: any[];
+    inventorySystems: any[];
 }
 
-export function PartsList({ parts, assets }: PartsListProps) {
+export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [assetFilter, setAssetFilter] = useState<string>("ALL");
     const [stockFilter, setStockFilter] = useState<string>("ALL");
+    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || "none");
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this part?")) return;
@@ -46,8 +48,11 @@ export function PartsList({ parts, assets }: PartsListProps) {
             if (!isAssigned) return false;
         }
 
-        if (stockFilter === "IN_STOCK" && part.quantityOnHand <= 0) return false;
-        if (stockFilter === "OUT_OF_STOCK" && part.quantityOnHand > 0) return false;
+        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+        const stock = systemItem?.quantityOnHand ?? 0;
+
+        if (stockFilter === "IN_STOCK" && stock <= 0) return false;
+        if (stockFilter === "OUT_OF_STOCK" && stock > 0) return false;
 
         return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
@@ -58,16 +63,28 @@ export function PartsList({ parts, assets }: PartsListProps) {
                 <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by name, #, or manufacturer..."
+                        placeholder="Search catalog..."
                         className="pl-9 bg-background"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-3 sm:w-auto">
+                <div className="flex flex-wrap gap-3 sm:w-auto">
+                    <Select value={selectedSystemId} onValueChange={setSelectedSystemId}>
+                        <SelectTrigger className="w-[180px] bg-background">
+                            <SelectValue placeholder="Inventory System" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {inventorySystems.length === 0 && <SelectItem value="none">No Systems</SelectItem>}
+                            {inventorySystems.map(system => (
+                                <SelectItem key={system.id} value={system.id}>{system.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <Select value={assetFilter} onValueChange={setAssetFilter}>
                         <SelectTrigger className="w-[160px] bg-background">
-                            <SelectValue placeholder="Filter by Asset" />
+                            <SelectValue placeholder="Asset Filter" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ALL">All Assets</SelectItem>
@@ -153,12 +170,26 @@ export function PartsList({ parts, assets }: PartsListProps) {
                                 </div>
                             </TableCell>
                             <TableCell>
-                                <div className="text-sm font-medium">
-                                    {part.quantityOnHand} {part.unitOfMeasure}
-                                </div>
-                                {part.quantityOnHand <= 0 && (
-                                    <div className="text-[10px] text-destructive font-bold uppercase">Out of Stock</div>
-                                )}
+                                {(() => {
+                                    const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                    const stock = systemItem?.quantityOnHand ?? 0;
+                                    const isTracked = !!systemItem;
+
+                                    if (!isTracked && selectedSystemId !== "none") {
+                                        return <span className="text-muted-foreground text-xs italic">Not tracked</span>;
+                                    }
+
+                                    return (
+                                        <div className="space-y-1">
+                                            <div className="text-sm font-medium">
+                                                {stock} {part.unitOfMeasure}
+                                            </div>
+                                            {stock <= 0 && isTracked && (
+                                                <div className="text-[10px] text-destructive font-bold uppercase">Out of Stock</div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </TableCell>
                             <TableCell className="text-right font-mono">
                                 ${part.defaultCost?.toFixed(2) || "0.00"}

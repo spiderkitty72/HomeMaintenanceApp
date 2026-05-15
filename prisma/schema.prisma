@@ -57,6 +57,8 @@ model User {
   groups        GroupMember[]
   partPurchases PartPurchase[]
   assetSpecTypes AssetSpecType[]
+  inventorySystems InventorySystem[]
+  inventorySystemAccess InventorySystemAccess[]
 }
 
 model VerificationToken {
@@ -175,7 +177,6 @@ model Part {
   compatibleType String? // e.g. "Car"
   defaultCost    Float   @default(0)
   unitOfMeasure  String  @default("pcs") // pcs, quarts, pkg, etc
-  quantityOnHand Float   @default(0)
   isActive       Boolean @default(true)
   image          String?
   
@@ -183,6 +184,7 @@ model Part {
   serviceParts   ServicePart[]
   purchases      PartPurchaseItem[]
   compatibilities AssetPartCompatibility[]
+  inventoryItems InventoryItem[]
 }
 
 model PartPurchase {
@@ -191,8 +193,10 @@ model PartPurchase {
   userId      String
   vendor      String?
   totalCost   Float    @default(0)
+  inventorySystemId String?
   
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
   items       PartPurchaseItem[]
   attachments Attachment[]
 }
@@ -228,8 +232,10 @@ model ServiceRecord {
   notes          String?
   totalCost      Float    @default(0)
   vendor         String?
+  inventorySystemId String?
   
   asset          Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
   parts          ServicePart[]
   attachments    Attachment[]
 }
@@ -299,4 +305,42 @@ model SystemSetting {
   key       String   @unique
   value     String   // JSON string
   updatedAt DateTime @updatedAt
+}
+
+model InventorySystem {
+  id          String   @id @default(cuid())
+  name        String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       InventoryItem[]
+  serviceRecords ServiceRecord[]
+  partPurchases  PartPurchase[]
+  sharedWith  InventorySystemAccess[]
+}
+
+model InventoryItem {
+  id                String  @id @default(cuid())
+  inventorySystemId String
+  partId            String
+  quantityOnHand    Float   @default(0)
+
+  inventorySystem   InventorySystem @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  part              Part            @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([inventorySystemId, partId])
+}
+
+model InventorySystemAccess {
+  id                String          @id @default(cuid())
+  inventorySystemId String
+  userId            String
+  permission        String          // VIEW, MANAGE
+
+  inventorySystem   InventorySystem @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([inventorySystemId, userId])
 }

@@ -17,6 +17,7 @@ const PurchaseSchema = z.object({
     date: z.coerce.date().default(new Date()),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    inventorySystemId: z.string().optional(),
 });
 
 export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
@@ -47,6 +48,7 @@ export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
                 userId: userId,
                 vendor: data.vendor,
                 totalCost,
+                inventorySystemId: data.inventorySystemId,
                 items: {
                     create: data.items.map(item => ({
                         partId: item.partId,
@@ -68,15 +70,27 @@ export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
         }
 
         // Update quantities on hand for all parts
-        for (const item of data.items) {
-            await tx.part.update({
-                where: { id: item.partId },
-                data: {
-                    quantityOnHand: {
-                        increment: item.quantity,
+        if (data.inventorySystemId) {
+            for (const item of data.items) {
+                await tx.inventoryItem.upsert({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: data.inventorySystemId,
+                            partId: item.partId,
+                        }
                     },
-                },
-            });
+                    update: {
+                        quantityOnHand: {
+                            increment: item.quantity,
+                        },
+                    },
+                    create: {
+                        inventorySystemId: data.inventorySystemId,
+                        partId: item.partId,
+                        quantityOnHand: item.quantity,
+                    }
+                });
+            }
         }
 
         return purchase;
@@ -148,22 +162,29 @@ export async function deletePartPurchase(id: string) {
 
     const purchase = await prisma.partPurchase.findUnique({
         where: { id },
-        include: { items: true },
+        include: { items: true, inventorySystem: true },
     });
 
     if (!purchase) throw new Error("Purchase not found");
 
     await prisma.$transaction(async (tx) => {
         // Roll back inventory quantities
-        for (const item of purchase.items) {
-            await tx.part.update({
-                where: { id: item.partId },
-                data: {
-                    quantityOnHand: {
-                        decrement: item.quantity,
+        if (purchase.inventorySystemId) {
+            for (const item of purchase.items) {
+                await tx.inventoryItem.update({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: purchase.inventorySystemId,
+                            partId: item.partId,
+                        }
                     },
-                },
-            });
+                    data: {
+                        quantityOnHand: {
+                            decrement: item.quantity,
+                        },
+                    },
+                });
+            }
         }
 
         // Delete the purchase (cascades to items and attachments)
@@ -195,28 +216,37 @@ export async function updatePartPurchase(id: string, data: { date: Date, vendor?
     return updated;
 }
 
-export async function adjustInventory(partId: string, newQuantity: number) {
+export async function adjustInventory(partId: string, systemId: string, newQuantity: number) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const existing = await prisma.part.findUnique({ where: { id: partId } });
-    if (!existing) throw new Error("Part not found");
+    const system = await prisma.inventorySystem.findUnique({ where: { id: systemId } });
+    if (!system) throw new Error("System not found");
 
     const isAdmin = (session.user as any).role === "ADMIN";
-    const isOwner = existing.userId === session.user.id;
-    const hasPermission = await checkPermission("EDIT", "PART");
+    const isOwner = system.userId === session.user.id;
 
-    if (!isAdmin && !isOwner && !hasPermission) {
-        throw new Error("Unauthorized to adjust inventory for this part");
+    if (!isAdmin && !isOwner) {
+        throw new Error("Unauthorized to adjust inventory in this system");
     }
 
-    const part = await prisma.part.update({
-        where: { id: partId },
-        data: {
+    const item = await prisma.inventoryItem.upsert({
+        where: {
+            inventorySystemId_partId: {
+                inventorySystemId: systemId,
+                partId: partId,
+            }
+        },
+        update: {
             quantityOnHand: newQuantity,
         },
+        create: {
+            inventorySystemId: systemId,
+            partId: partId,
+            quantityOnHand: newQuantity,
+        }
     });
 
     revalidatePath("/dashboard/parts");
-    return part;
+    return item;
 }
