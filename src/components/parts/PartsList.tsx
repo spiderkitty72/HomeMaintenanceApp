@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Cog, Trash2, Link as LinkIcon, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Package, Trash2, Search, Filter } from "lucide-react";
 import { deletePart } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
@@ -16,6 +18,10 @@ interface PartsListProps {
 }
 
 export function PartsList({ parts, assets }: PartsListProps) {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [assetFilter, setAssetFilter] = useState<string>("ALL");
+    const [stockFilter, setStockFilter] = useState<string>("ALL");
+
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this part?")) return;
         try {
@@ -26,8 +32,65 @@ export function PartsList({ parts, assets }: PartsListProps) {
         }
     };
 
+    const filteredParts = parts.filter(part => {
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const matchesName = part.name.toLowerCase().includes(q) || 
+                                (part.partNumber && part.partNumber.toLowerCase().includes(q)) ||
+                                (part.manufacturer && part.manufacturer.toLowerCase().includes(q));
+            if (!matchesName) return false;
+        }
+
+        if (assetFilter !== "ALL") {
+            const isAssigned = part.compatibilities.some((c: any) => c.assetId === assetFilter);
+            if (!isAssigned) return false;
+        }
+
+        if (stockFilter === "IN_STOCK" && part.quantityOnHand <= 0) return false;
+        if (stockFilter === "OUT_OF_STOCK" && part.quantityOnHand > 0) return false;
+
+        return true;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
     return (
-        <div className="rounded-md border">
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 bg-muted/30 p-3 rounded-lg border">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name, #, or manufacturer..."
+                        className="pl-9 bg-background"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex gap-3 sm:w-auto">
+                    <Select value={assetFilter} onValueChange={setAssetFilter}>
+                        <SelectTrigger className="w-[160px] bg-background">
+                            <SelectValue placeholder="Filter by Asset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Assets</SelectItem>
+                            {assets.map(asset => (
+                                <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    
+                    <Select value={stockFilter} onValueChange={setStockFilter}>
+                        <SelectTrigger className="w-[150px] bg-background">
+                            <SelectValue placeholder="Stock Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Stock</SelectItem>
+                            <SelectItem value="IN_STOCK">In Stock</SelectItem>
+                            <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <div className="rounded-md border">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -41,14 +104,14 @@ export function PartsList({ parts, assets }: PartsListProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {parts.length === 0 && (
+                    {filteredParts.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground italic">
-                                No parts found in your inventory.
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground italic">
+                                No parts match your filters.
                             </TableCell>
                         </TableRow>
                     )}
-                    {parts.map((part) => (
+                    {filteredParts.map((part) => (
                         <TableRow key={part.id}>
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-3">
@@ -118,6 +181,7 @@ export function PartsList({ parts, assets }: PartsListProps) {
                     ))}
                 </TableBody>
             </Table>
+            </div>
         </div>
     );
 }
