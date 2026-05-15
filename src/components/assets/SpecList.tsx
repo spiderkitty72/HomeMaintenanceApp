@@ -36,37 +36,51 @@ export function SpecList({ assetId, specs }: SpecListProps) {
                         <p className="text-muted-foreground italic">No specifications added yet.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {specs.map((spec) => (
-                            <div
-                                key={spec.id}
-                                className="flex items-center justify-between p-4 border rounded-xl bg-card hover:border-primary/30 transition-all group"
-                            >
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-[13px] font-black uppercase tracking-widest text-muted-foreground/80 mb-1">
-                                        {spec.specType.name}
-                                    </span>
-                                    <div className="flex items-baseline gap-1.5 overflow-hidden">
-                                        <span className="text-lg font-bold font-mono tracking-tight truncate">
-                                            {spec.value}
-                                        </span>
-                                        {spec.specType.unit && (
-                                            <span className="text-xs text-muted-foreground font-medium italic">
-                                                {spec.specType.unit}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                                    onClick={() => handleDelete(spec.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Specification</TableHead>
+                                    <TableHead>Value</TableHead>
+                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {specs.map((spec) => (
+                                    <TableRow key={spec.id}>
+                                        <TableCell className="font-medium">
+                                            {spec.specType.name}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="font-bold font-mono tracking-tight">
+                                                    {spec.value}
+                                                </span>
+                                                {spec.specType.unit && (
+                                                    <span className="text-xs text-muted-foreground italic">
+                                                        {spec.specType.unit}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end items-center gap-1">
+                                                <AddSpecDialog assetId={assetId} spec={spec} />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-muted-foreground hover:text-destructive transition-all"
+                                                    onClick={() => handleDelete(spec.id)}
+                                                    title="Delete Specification"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 )}
             </CardContent>

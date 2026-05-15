@@ -28,8 +28,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, Plus } from "lucide-react";
-import { createSchedule } from "@/lib/actions/schedules";
+import { CalendarClock, Plus, Edit2 } from "lucide-react";
+import { createSchedule, updateSchedule } from "@/lib/actions/schedules";
 import { toast } from "sonner";
 
 const scheduleSchema = z.object({
@@ -46,48 +46,65 @@ interface AddScheduleDialogProps {
     assetId: string;
     trackingMethod: string;
     currentUsage: number;
+    schedule?: any;
 }
 
-export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: AddScheduleDialogProps) {
+export function AddScheduleDialog({ assetId, trackingMethod, currentUsage, schedule }: AddScheduleDialogProps) {
     const [open, setOpen] = useState(false);
 
     const form = useForm<ScheduleFormValues>({
         resolver: zodResolver(scheduleSchema) as any,
         defaultValues: {
-            name: "",
-            frequencyType: (trackingMethod === "DateOnly" ? "Date" : trackingMethod) as any,
-            frequencyValue: trackingMethod === "Mileage" ? 5000 : 365,
-            lastPerformedDate: new Date().toISOString().split("T")[0],
-            lastPerformedUsage: currentUsage,
+            name: schedule?.name || "",
+            frequencyType: schedule?.frequencyType || (trackingMethod === "DateOnly" ? "Date" : trackingMethod) as any,
+            frequencyValue: schedule?.frequencyValue || (trackingMethod === "Mileage" ? 5000 : 365),
+            lastPerformedDate: schedule?.lastPerformedDate 
+                ? new Date(schedule.lastPerformedDate).toISOString().split("T")[0] 
+                : new Date().toISOString().split("T")[0],
+            lastPerformedUsage: schedule?.lastPerformedUsage ?? currentUsage,
         },
     });
 
     async function onSubmit(values: ScheduleFormValues) {
         try {
-            await createSchedule({
+            const data = {
                 ...values,
                 assetId,
                 lastPerformedDate: values.lastPerformedDate ? new Date(values.lastPerformedDate) : null,
-            });
-            toast.success("Reminder created");
+            };
+
+            if (schedule) {
+                await updateSchedule(schedule.id, data);
+                toast.success("Reminder updated");
+            } else {
+                await createSchedule(data);
+                toast.success("Reminder created");
+            }
+            
             setOpen(false);
-            form.reset();
+            if (!schedule) form.reset();
         } catch (error) {
-            toast.error("Failed to create reminder");
+            toast.error(schedule ? "Failed to update reminder" : "Failed to create reminder");
         }
     }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                    <CalendarClock className="h-4 w-4" />
-                    <span className="hidden sm:inline">Add Reminder</span>
-                </Button>
+                {schedule ? (
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-all">
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                ) : (
+                    <Button variant="outline" size="sm" className="gap-2">
+                        <CalendarClock className="h-4 w-4" />
+                        <span className="hidden sm:inline">Add Reminder</span>
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add Maintenance Reminder</DialogTitle>
+                    <DialogTitle>{schedule ? "Edit Maintenance Reminder" : "Add Maintenance Reminder"}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -177,7 +194,7 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage }: Add
                         </div>
 
                         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? "Saving..." : "Create Reminder"}
+                            {form.formState.isSubmitting ? "Saving..." : (schedule ? "Save Changes" : "Create Reminder")}
                         </Button>
                     </form>
                 </Form>
