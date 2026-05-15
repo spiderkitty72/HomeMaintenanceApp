@@ -246,9 +246,11 @@ model ServicePart {
   partId          String
   quantity        Float
   costPerUnit     Float
-  
+  inventorySystemId String?
+
   serviceRecord   ServiceRecord @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
   part            Part          @relation(fields: [partId], references: [id])
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
 }
 
 model FuelRecord {
@@ -317,6 +319,7 @@ model InventorySystem {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   items       InventoryItem[]
   serviceRecords ServiceRecord[]
+  serviceParts   ServicePart[]
   partPurchases  PartPurchase[]
   sharedWith  InventorySystemAccess[]
 }
