@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FuelRecord } from "@prisma/client";
 import { format } from "date-fns";
 import {
@@ -17,128 +18,145 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { useTheme } from "next-themes";
 
+type Metric = "mpg" | "price" | "cpm";
+
+const METRICS: { key: Metric; label: string; unit: string }[] = [
+    { key: "mpg",   label: "MPG",        unit: "mpg"  },
+    { key: "price", label: "Fuel Price",  unit: "$/gal" },
+    { key: "cpm",   label: "Cost / Mile", unit: "$/mi" },
+];
+
 interface FuelChartProps {
     records: FuelRecord[];
 }
 
 export function FuelChart({ records }: FuelChartProps) {
+    const [metric, setMetric] = useState<Metric>("mpg");
     const { theme, systemTheme } = useTheme();
-    // Default to dark if undefined to prevent hydration mismatch flashes, 
-    // or just handle it. We'll use a safe check.
     const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark");
 
-    const strokeColor = isDark ? "#60a5fa" : "#3b82f6"; // blue-400 : blue-500
-    const gridColor = isDark ? "#334155" : "#e2e8f0"; // slate-700 : slate-200
-    const textColor = isDark ? "#94a3b8" : "#64748b"; // slate-400 : slate-500
-    const dotFill = isDark ? "#0f172a" : "#ffffff";
-    const avgColor = "#16a34a"; // green-600
+    const strokeColor = isDark ? "#60a5fa" : "#3b82f6";
+    const gridColor   = isDark ? "#334155" : "#e2e8f0";
+    const textColor   = isDark ? "#94a3b8" : "#64748b";
+    const dotFill     = isDark ? "#0f172a" : "#ffffff";
+    const avgColor    = "#16a34a";
+    const limitColor  = isDark ? "#ef4444" : "#dc2626";
 
-    // Records are sorted newest to oldest. We want oldest to newest for the chart.
     const sortedRecords = [...records].reverse();
-    
-    const chartData = [];
+
     let validGallons = 0;
     let validDistance = 0;
-    
-    for (let i = 0; i < sortedRecords.length; i++) {
-        const record = sortedRecords[i];
-        let mpg = null;
-        
-        if (i > 0) {
-            const prevRecord = sortedRecords[i - 1]; // prevRecord is older
-            if (record.isFullTank && prevRecord.isFullTank && !(record as any).missedPrevious) {
-                const distance = record.usageAtFill - prevRecord.usageAtFill;
-                if (distance > 0) {
-                    mpg = Number((distance / record.gallons).toFixed(2));
-                    validGallons += record.gallons;
-                    validDistance += distance;
-                }
+    const chartData: { date: string; fullDate: string; timestamp: number; mpg: number; price: number; cpm: number }[] = [];
+
+    for (let i = 1; i < sortedRecords.length; i++) {
+        const cur  = sortedRecords[i];
+        const prev = sortedRecords[i - 1];
+
+        if (cur.isFullTank && prev.isFullTank && !(cur as any).missedPrevious) {
+            const distance = cur.usageAtFill - prev.usageAtFill;
+            if (distance > 0) {
+                const mpg = distance / cur.gallons;
+                validGallons  += cur.gallons;
+                validDistance += distance;
+
+                chartData.push({
+                    date:      format(new Date(cur.date), "MMM d"),
+                    fullDate:  format(new Date(cur.date), "MMM d, yyyy"),
+                    timestamp: new Date(cur.date).getTime(),
+                    mpg:       Number(mpg.toFixed(2)),
+                    price:     Number(cur.pricePerGallon.toFixed(3)),
+                    cpm:       Number((cur.pricePerGallon / mpg).toFixed(4)),
+                });
             }
         }
-
-        if (mpg !== null) {
-            chartData.push({
-                date: format(new Date(record.date), "MMM d"),
-                mpg: mpg,
-                fullDate: format(new Date(record.date), "MMM d, yyyy"),
-                timestamp: new Date(record.date).getTime()
-            });
-        }
     }
 
-    if (chartData.length === 0) {
-        return null;
-    }
+    if (chartData.length === 0) return null;
 
-    // Calculate overall average MPG for the ReferenceLine
-    const avgMpg = validGallons > 0 ? Number((validDistance / validGallons).toFixed(1)) : 0;
+    // Averages: volume-weighted for MPG; arithmetic mean for price/cpm
+    const avgMpg   = validGallons > 0 ? validDistance / validGallons : 0;
+    const avgPrice = chartData.reduce((s, d) => s + d.price, 0) / chartData.length;
+    const avgCpm   = avgMpg > 0 ? avgPrice / avgMpg : 0;
+    const avgMap: Record<Metric, number> = { mpg: avgMpg, price: avgPrice, cpm: avgCpm };
+    const avg = avgMap[metric];
 
-    // Calculate Upper and Lower Control Limits based on the last 10 valid MPG points
+    // UCL / LCL from the last 10 data points of the selected metric
     let ucl: number | null = null;
     let lcl: number | null = null;
-
     if (chartData.length >= 2) {
-        const last10 = chartData.slice(-10).map(d => d.mpg);
-        const mean10 = last10.reduce((sum, val) => sum + val, 0) / last10.length;
-        const squareDiffs = last10.map(val => Math.pow(val - mean10, 2));
-        // Sample standard deviation
-        const variance = squareDiffs.reduce((sum, val) => sum + val, 0) / (last10.length - 1);
-        const stdDev = Math.sqrt(variance);
-
-        ucl = Number((mean10 + 3 * stdDev).toFixed(1));
-        lcl = Math.max(0, Number((mean10 - 3 * stdDev).toFixed(1))); // LCL usually shouldn't go below 0 for MPG
+        const vals = chartData.slice(-10).map(d => d[metric]);
+        const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const stdDev = Math.sqrt(vals.map(v => (v - mean) ** 2).reduce((a, b) => a + b, 0) / (vals.length - 1));
+        ucl = mean + 3 * stdDev;
+        lcl = Math.max(0, mean - 3 * stdDev);
     }
 
-    // Calculate domain with a slight buffer
-    const minMpg = Math.min(...chartData.map(d => d.mpg), avgMpg || Infinity, lcl ?? Infinity);
-    const maxMpg = Math.max(...chartData.map(d => d.mpg), avgMpg || -Infinity, ucl ?? -Infinity);
-    const buffer = (maxMpg - minMpg) * 0.2 || 2; // 20% buffer or 2 if flat
+    const vals   = chartData.map(d => d[metric]);
+    const minVal = Math.min(...vals, lcl ?? Infinity);
+    const maxVal = Math.max(...vals, ucl ?? -Infinity);
+    const buffer = (maxVal - minVal) * 0.2 || (metric === "mpg" ? 2 : 0.05);
 
-    // Time scale: show last 1 month by default in the brush
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const oneMonthAgoMs = oneMonthAgo.getTime();
-    
-    // Find index of the first record within the last month
+    const oneMonthAgoMs = new Date(new Date().setMonth(new Date().getMonth() - 1)).getTime();
     let startIndex = chartData.findIndex(d => d.timestamp >= oneMonthAgoMs);
-    if (startIndex === -1) startIndex = Math.max(0, chartData.length - 10); // fallback to last 10 if none in last month
+    if (startIndex === -1) startIndex = Math.max(0, chartData.length - 10);
+
+    const isMoney = metric !== "mpg";
+    const fmt     = (v: number) => isMoney ? `$${v.toFixed(3)}` : v.toFixed(1);
+    const fmtTick = (v: number) => isMoney ? `$${v.toFixed(2)}` : v.toFixed(0);
+    const unitLabel = METRICS.find(m => m.key === metric)!.unit;
 
     return (
         <Card className="mb-6 shadow-sm border-muted/60">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 space-y-3">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center">
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    Fuel Economy Trend
+                    Fuel Trend
                 </CardTitle>
+                <div className="flex items-center bg-muted rounded-lg p-[3px]">
+                    {METRICS.map(m => (
+                        <button
+                            key={m.key}
+                            onClick={() => setMetric(m.key)}
+                            className={`flex-1 px-2 py-1 text-sm font-medium rounded-md border whitespace-nowrap transition-all ${
+                                metric === m.key
+                                    ? "bg-background text-foreground border-transparent shadow-sm dark:bg-input/30 dark:border-input dark:text-foreground"
+                                    : "border-transparent text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
+                            }`}
+                        >
+                            {m.label}
+                        </button>
+                    ))}
+                </div>
             </CardHeader>
             <CardContent className="h-[280px] pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                        <XAxis 
-                            dataKey="date" 
-                            stroke={textColor} 
-                            fontSize={12} 
+                        <XAxis
+                            dataKey="date"
+                            stroke={textColor}
+                            fontSize={12}
                             tickLine={false}
                             axisLine={false}
                             dy={10}
                         />
-                        <YAxis 
-                            stroke={textColor} 
-                            fontSize={12} 
+                        <YAxis
+                            stroke={textColor}
+                            fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            domain={[Math.max(0, minMpg - buffer), maxMpg + buffer]}
-                            tickFormatter={(value) => value.toFixed(0)}
+                            domain={[Math.max(0, minVal - buffer), maxVal + buffer]}
+                            tickFormatter={fmtTick}
                         />
-                        <Tooltip 
+                        <Tooltip
                             content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                     return (
                                         <div className="bg-popover text-popover-foreground border shadow-md rounded-lg p-3">
                                             <p className="text-xs text-muted-foreground mb-1">{payload[0].payload.fullDate}</p>
-                                            <p className="font-bold flex items-center" style={{ color: strokeColor }}>
-                                                {payload[0].value} <span className="text-xs ml-1 font-normal text-muted-foreground">MPG</span>
+                                            <p className="font-bold flex items-center gap-1" style={{ color: strokeColor }}>
+                                                {fmt(Number(payload[0].value))}
+                                                <span className="text-xs font-normal text-muted-foreground">{unitLabel}</span>
                                             </p>
                                         </div>
                                     );
@@ -146,47 +164,48 @@ export function FuelChart({ records }: FuelChartProps) {
                                 return null;
                             }}
                         />
-                        {avgMpg > 0 && (
-                            <ReferenceLine 
-                                y={avgMpg} 
-                                stroke={avgColor} 
-                                strokeDasharray="4 4" 
+                        {avg > 0 && (
+                            <ReferenceLine
+                                y={avg}
+                                stroke={avgColor}
+                                strokeDasharray="4 4"
                                 strokeWidth={2}
-                                label={{ position: 'insideTopLeft', value: `AVG: ${avgMpg}`, fill: avgColor, fontSize: 10, fontWeight: 'bold' }}
+                                label={{ position: "insideTopLeft", value: `AVG: ${fmt(avg)}`, fill: avgColor, fontSize: 10, fontWeight: "bold" }}
                             />
                         )}
                         {ucl !== null && (
-                            <ReferenceLine 
-                                y={ucl} 
-                                stroke={isDark ? "#ef4444" : "#dc2626"} 
-                                strokeDasharray="3 3" 
+                            <ReferenceLine
+                                y={ucl}
+                                stroke={limitColor}
+                                strokeDasharray="3 3"
                                 strokeOpacity={0.5}
-                                label={{ position: 'insideTopLeft', value: `UCL: ${ucl}`, fill: isDark ? "#ef4444" : "#dc2626", fontSize: 10, opacity: 0.8 }}
+                                label={{ position: "insideTopLeft", value: `UCL: ${fmt(ucl)}`, fill: limitColor, fontSize: 10, opacity: 0.8 }}
                             />
                         )}
-                        {lcl !== null && (
-                            <ReferenceLine 
-                                y={lcl} 
-                                stroke={isDark ? "#ef4444" : "#dc2626"} 
-                                strokeDasharray="3 3" 
+                        {lcl !== null && lcl > 0 && (
+                            <ReferenceLine
+                                y={lcl}
+                                stroke={limitColor}
+                                strokeDasharray="3 3"
                                 strokeOpacity={0.5}
-                                label={{ position: 'insideBottomLeft', value: `LCL: ${lcl}`, fill: isDark ? "#ef4444" : "#dc2626", fontSize: 10, opacity: 0.8 }}
+                                label={{ position: "insideBottomLeft", value: `LCL: ${fmt(lcl)}`, fill: limitColor, fontSize: 10, opacity: 0.8 }}
                             />
                         )}
-                        <Line 
-                            type="monotone" 
-                            dataKey="mpg" 
-                            name="MPG"
-                            stroke={strokeColor} 
+                        <Line
+                            key={metric}
+                            type="monotone"
+                            dataKey={metric}
+                            stroke={strokeColor}
                             strokeWidth={3}
                             dot={{ r: 4, strokeWidth: 2, fill: dotFill, stroke: strokeColor }}
                             activeDot={{ r: 6, strokeWidth: 0, fill: strokeColor }}
-                            animationDuration={1000}
+                            animationDuration={400}
+                            isAnimationActive={true}
                         />
-                        <Brush 
-                            dataKey="date" 
-                            height={30} 
-                            stroke={textColor} 
+                        <Brush
+                            dataKey="date"
+                            height={30}
+                            stroke={textColor}
                             fill={isDark ? "#1e293b" : "#f8fafc"}
                             tickFormatter={() => ""}
                             startIndex={startIndex}

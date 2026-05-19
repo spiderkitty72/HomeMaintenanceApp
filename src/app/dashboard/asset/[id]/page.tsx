@@ -195,6 +195,17 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                                 ${fuelStats.avgCostPerGal.toFixed(3)}/gal
                                             </div>
                                         </div>
+                                        {asset.trackingMethod === "Mileage" && fuelStats.avgMpg > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center text-sm text-muted-foreground">
+                                                    <TrendingUp className="h-4 w-4 mr-2" />
+                                                    Cost / Mile
+                                                </div>
+                                                <div className="font-medium">
+                                                    ${(fuelStats.avgCostPerGal / fuelStats.avgMpg).toFixed(3)}/mi
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}
