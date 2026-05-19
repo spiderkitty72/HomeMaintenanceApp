@@ -72,6 +72,13 @@ export async function getInventorySystems() {
       ],
     },
     include: {
+      items: {
+        include: {
+          part: {
+            select: { id: true, name: true, defaultCost: true, partNumber: true },
+          },
+        },
+      },
       sharedWith: {
         include: { user: { select: { id: true, name: true, email: true, image: true } } },
       },

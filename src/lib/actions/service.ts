@@ -240,18 +240,9 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         for (const p of existing.parts) {
             const sysId = p.inventorySystemId ?? existing.inventorySystemId;
             if (sysId) {
-                await tx.inventoryItem.update({
-                    where: {
-                        inventorySystemId_partId: {
-                            inventorySystemId: sysId,
-                            partId: p.partId,
-                        }
-                    },
-                    data: {
-                        quantityOnHand: {
-                            increment: p.quantity,
-                        },
-                    },
+                await tx.inventoryItem.updateMany({
+                    where: { inventorySystemId: sysId, partId: p.partId },
+                    data: { quantityOnHand: { increment: p.quantity } },
                 });
             }
         }
@@ -387,18 +378,9 @@ export async function deleteServiceRecord(id: string) {
         for (const p of existing.parts) {
             const sysId = p.inventorySystemId ?? existing.inventorySystemId;
             if (sysId) {
-                await tx.inventoryItem.update({
-                    where: {
-                        inventorySystemId_partId: {
-                            inventorySystemId: sysId,
-                            partId: p.partId,
-                        }
-                    },
-                    data: {
-                        quantityOnHand: {
-                            increment: p.quantity,
-                        },
-                    },
+                await tx.inventoryItem.updateMany({
+                    where: { inventorySystemId: sysId, partId: p.partId },
+                    data: { quantityOnHand: { increment: p.quantity } },
                 });
             }
         }
