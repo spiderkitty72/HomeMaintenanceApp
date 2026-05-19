@@ -17,7 +17,7 @@ import { togglePartStatus } from "@/lib/actions/parts";
 import { adjustInventory } from "@/lib/actions/inventory";
 import { removePartFromSystem } from "@/lib/actions/inventorySystems";
 import { toast } from "sonner";
-import { Package, Save, Loader2, Power, PowerOff, Edit2, AlertCircle, LayoutGrid, PackageMinus } from "lucide-react";
+import { Package, Save, Loader2, Power, PowerOff, AlertCircle, LayoutGrid, PackageMinus, Search } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -37,8 +37,22 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
     const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id || "none");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [editValues, setEditValues] = useState<{ [key: string]: number }>({});
+    const [search, setSearch] = useState("");
 
     const canManage = !userPermission || userPermission === "OWNER" || userPermission === "MANAGE";
+
+    const filteredParts = search.trim() === "" ? parts : parts.filter((part) => {
+        const q = search.toLowerCase();
+        const assetNames = (part.compatibilities ?? []).map((c: any) => c.asset?.name ?? "").join(" ");
+        return (
+            part.name?.toLowerCase().includes(q) ||
+            part.partNumber?.toLowerCase().includes(q) ||
+            part.manufacturer?.toLowerCase().includes(q) ||
+            part.unitOfMeasure?.toLowerCase().includes(q) ||
+            part.compatibleType?.toLowerCase().includes(q) ||
+            assetNames.toLowerCase().includes(q)
+        );
+    });
 
     const handleLevelChange = (partId: string, value: string) => {
         setEditValues((prev) => ({
@@ -106,6 +120,15 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                     </Select>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <div className="relative w-full sm:w-[220px]">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                            placeholder="Search parts..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-8 h-9 bg-background"
+                        />
+                    </div>
                     <AddPartDialog assets={allAssets} />
                 </div>
             </div>
@@ -123,6 +146,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                     <TableHeader>
                         <TableRow>
                             <TableHead>Part Name</TableHead>
+                            <TableHead>Assets</TableHead>
                             <TableHead>Current Stock</TableHead>
                             <TableHead>UOM</TableHead>
                             {canManage && <TableHead className="w-[150px]">Manual Adjust</TableHead>}
@@ -130,7 +154,14 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {parts.map((part) => (
+                        {filteredParts.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={canManage ? 6 : 4} className="text-center py-8 text-muted-foreground italic">
+                                    No parts match your search.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {filteredParts.map((part) => (
                             <TableRow key={part.id} className={!part.isActive ? "opacity-50 grayscale bg-muted/20" : ""}>
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
@@ -146,6 +177,21 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                             <div className="text-xs text-muted-foreground uppercase">{part.partNumber || "No Part #"}</div>
                                         </div>
                                     </div>
+                                </TableCell>
+                                <TableCell>
+                                    {part.compatibilities && part.compatibilities.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                            {part.compatibilities.map((c: any) => (
+                                                <Badge key={c.assetId} variant="outline" className="text-xs font-normal">
+                                                    {c.asset?.name}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : part.compatibleType ? (
+                                        <span className="text-xs text-muted-foreground italic">All {part.compatibleType}</span>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground italic">Universal</span>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {(() => {

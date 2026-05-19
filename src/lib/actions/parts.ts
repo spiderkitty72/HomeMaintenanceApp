@@ -85,11 +85,6 @@ export async function getParts() {
                 },
             },
             inventoryItems: {
-                where: {
-                    inventorySystem: {
-                        userId: session.user.id
-                    }
-                },
                 include: {
                     inventorySystem: true
                 }
@@ -307,11 +302,6 @@ export async function getCompatibleParts(assetId: string) {
                 },
             },
             inventoryItems: {
-                where: {
-                    inventorySystem: {
-                        userId: session.user.id
-                    }
-                },
                 include: {
                     inventorySystem: true
                 }

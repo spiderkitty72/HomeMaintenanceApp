@@ -131,6 +131,15 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
         form.setValue("parts", currentParts.filter((_, i) => i !== index));
     };
 
+    const getPartsForSystem = (sysId: string | undefined) => {
+        if (!sysId) return availableParts;
+        const system = inventorySystems.find((s: any) => s.id === sysId);
+        if (!system?.items?.length) return availableParts;
+        return system.items
+            .map((item: any) => item.part)
+            .filter(Boolean) as typeof availableParts;
+    };
+
     const dateStr = form.watch("date");
     const usageStr = form.watch("usageAtService");
 
@@ -292,7 +301,9 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                 </Button>
                             </div>
                             <div className="space-y-3">
-                                {form.watch("parts").map((_, index) => (
+                                {form.watch("parts").map((part, index) => {
+                                    const partsForRow = getPartsForSystem(part.inventorySystemId || undefined);
+                                    return (
                                     <div key={index} className="border p-3 rounded-md bg-muted/30 space-y-2">
                                         <div className="flex gap-3 items-end">
                                             <FormField
@@ -308,7 +319,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                                                     form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
                                                                 }
                                                             }}
-                                                            defaultValue={field.value}
+                                                            value={field.value}
                                                         >
                                                             <FormControl>
                                                                 <SelectTrigger>
@@ -316,7 +327,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {availableParts.map((p) => (
+                                                                {partsForRow.map((p) => (
                                                                     <SelectItem key={p.id} value={p.id}>
                                                                         {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
                                                                     </SelectItem>
@@ -368,7 +379,18 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                                 render={({ field }) => (
                                                     <FormItem className="space-y-0">
                                                         <Select
-                                                            onValueChange={(val) => field.onChange(val === "__none__" ? "" : val)}
+                                                            onValueChange={(val) => {
+                                                                const newSysId = val === "__none__" ? "" : val;
+                                                                field.onChange(newSysId);
+                                                                if (newSysId) {
+                                                                    const currentPartId = form.getValues(`parts.${index}.partId`);
+                                                                    const partsInNewSystem = getPartsForSystem(newSysId);
+                                                                    if (currentPartId && !partsInNewSystem.find(p => p.id === currentPartId)) {
+                                                                        form.setValue(`parts.${index}.partId`, "");
+                                                                        form.setValue(`parts.${index}.costPerUnit`, 0);
+                                                                    }
+                                                                }
+                                                            }}
                                                             value={field.value || "__none__"}
                                                         >
                                                             <FormControl>
@@ -388,7 +410,8 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                             />
                                         )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                                 {form.watch("parts").length === 0 && (
                                     <p className="text-xs text-center text-muted-foreground py-2 italic border border-dashed rounded-md">
                                         No parts logged with this service.
