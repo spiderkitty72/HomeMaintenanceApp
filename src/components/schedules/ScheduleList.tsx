@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { ServiceSchedule } from "@prisma/client";
-import { format, isBefore } from "date-fns";
+import { isBefore } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Trash2, AlertCircle } from "lucide-react";
 import { deleteSchedule } from "@/lib/actions/schedules";
 import { toast } from "sonner";
+import { formatUtcDate } from "@/lib/utils";
 import { AddScheduleDialog } from "./AddScheduleDialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -133,7 +134,7 @@ export function ScheduleList({ schedules, assetId, trackingMethod, currentUsage 
                                             {schedule.nextDueDate && (
                                                 <div className="flex items-center text-primary font-medium">
                                                     <Calendar className="h-3 w-3 mr-1" />
-                                                    Est. {format(new Date(schedule.nextDueDate), "MMM d, yyyy")}
+                                                    Est. {formatUtcDate(schedule.nextDueDate)}
                                                 </div>
                                             )}
                                         </div>
@@ -206,7 +207,7 @@ export function ScheduleList({ schedules, assetId, trackingMethod, currentUsage 
                                             {schedule.nextDueDate ? (
                                                 <div className="flex items-center text-primary font-medium text-sm">
                                                     <Calendar className="h-3 w-3 mr-1" />
-                                                    {format(new Date(schedule.nextDueDate), "MMM d, yyyy")}
+                                                    {formatUtcDate(schedule.nextDueDate)}
                                                 </div>
                                             ) : (
                                                 <span className="text-muted-foreground">---</span>

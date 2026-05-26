@@ -18,6 +18,7 @@ const FuelRecordSchema = z.object({
     isFullTank: z.boolean(),
     missedPrevious: z.boolean().default(false),
     image: z.string().optional(),
+    imageName: z.string().optional(),
 });
 
 export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
@@ -48,6 +49,7 @@ export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
             await tx.attachment.create({
                 data: {
                     url: data.image,
+                    name: data.imageName || "Fuel Receipt",
                     fileType: isImage ? "IMAGE" : "DOCUMENT",
                     fuelRecordId: fuelRecord.id,
                 },
@@ -193,7 +195,7 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
         throw new Error("Unauthorized to update this record");
     }
 
-    const { image, ...fuelData } = data;
+    const { image, imageName, ...fuelData } = data;
 
     const result = await prisma.$transaction(async (tx) => {
         const updated = await tx.fuelRecord.update({
@@ -216,6 +218,7 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
                 await tx.attachment.create({
                     data: {
                         url: image,
+                        name: imageName || "Fuel Receipt",
                         fileType: isImage ? "IMAGE" : "DOCUMENT",
                         fuelRecordId: id,
                     },

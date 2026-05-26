@@ -16,7 +16,7 @@ import { deleteFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
 import { Fuel, Trash2, Search, Calendar, User, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 
 interface AdminFuelListProps {
     records: any[];
@@ -71,11 +71,7 @@ export function AdminFuelList({ records }: AdminFuelListProps) {
                             <TableRow key={record.id}>
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{format(new Date(record.date), "MMM d, yyyy")}</span>
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {format(new Date(record.date), "HH:mm")}
-                                        </span>
+                                        <span className="text-sm font-medium">{formatUtcDate(record.date)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>

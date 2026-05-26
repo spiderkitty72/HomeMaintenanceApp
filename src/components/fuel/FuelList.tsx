@@ -1,7 +1,7 @@
 "use client";
 
 import { FuelRecord } from "@prisma/client";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 import {
     Table,
     TableBody,
@@ -62,7 +62,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
                                         <div className="flex justify-between items-center text-sm">
                                             <div className="flex items-center text-muted-foreground">
                                                 <Calendar className="h-3.5 w-3.5 mr-1" />
-                                                {format(new Date(record.date), "MMM d, yyyy")}
+                                                {formatUtcDate(record.date)}
                                             </div>
                                             <div className="flex items-center font-medium">
                                                 <Calculator className="h-3.5 w-3.5 mr-1 text-primary" />
@@ -128,7 +128,7 @@ export function FuelList({ records, trackingMethod }: FuelListProps) {
 
                                     return (
                                         <TableRow key={record.id}>
-                                            <TableCell className="font-medium">{format(new Date(record.date), "MMM d, yyyy")}</TableCell>
+                                            <TableCell className="font-medium">{formatUtcDate(record.date)}</TableCell>
                                             <TableCell>
                                                 <div className="font-medium">{record.usageAtFill.toLocaleString()}</div>
                                                 {!record.isFullTank && <div className="text-[9px] text-muted-foreground uppercase font-bold">Partial</div>}

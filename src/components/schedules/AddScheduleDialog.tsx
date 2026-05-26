@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -52,6 +52,11 @@ interface AddScheduleDialogProps {
 export function AddScheduleDialog({ assetId, trackingMethod, currentUsage, schedule }: AddScheduleDialogProps) {
     const [open, setOpen] = useState(false);
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const form = useForm<ScheduleFormValues>({
         resolver: zodResolver(scheduleSchema) as any,
         defaultValues: {
@@ -86,6 +91,19 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage, sched
         } catch (error) {
             toast.error(schedule ? "Failed to update reminder" : "Failed to create reminder");
         }
+    }
+
+    if (!mounted) {
+        return schedule ? (
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-all">
+                <Edit2 className="h-4 w-4" />
+            </Button>
+        ) : (
+            <Button variant="outline" size="sm" className="gap-2">
+                <CalendarClock className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Reminder</span>
+            </Button>
+        );
     }
 
     return (

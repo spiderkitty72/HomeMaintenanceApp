@@ -19,11 +19,18 @@ export async function GET(
 
         // Determine content type based on extension
         const ext = filename.split(".").pop()?.toLowerCase();
-        let contentType = "image/jpeg";
-        if (ext === "png") contentType = "image/png";
-        if (ext === "webp") contentType = "image/webp";
-        if (ext === "gif") contentType = "image/gif";
-        if (ext === "svg") contentType = "image/svg+xml";
+        let contentType = "application/octet-stream";
+        if (ext === "pdf") contentType = "application/pdf";
+        else if (ext === "docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        else if (ext === "doc") contentType = "application/msword";
+        else if (ext === "xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        else if (ext === "xls") contentType = "application/vnd.ms-excel";
+        else if (ext === "txt") contentType = "text/plain";
+        else if (ext === "png") contentType = "image/png";
+        else if (ext === "webp") contentType = "image/webp";
+        else if (ext === "gif") contentType = "image/gif";
+        else if (ext === "svg") contentType = "image/svg+xml";
+        else if (["jpg", "jpeg"].includes(ext || "")) contentType = "image/jpeg";
 
         return new NextResponse(fileBuffer, {
             headers: {

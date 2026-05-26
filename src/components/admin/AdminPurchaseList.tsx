@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, ShoppingBag, Calendar, User, Store } from "lucide-react";
 import { deletePartPurchase } from "@/lib/actions/inventory";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 import { EditPurchaseDialog } from "./EditPurchaseDialog";
 
 interface AdminPurchaseListProps {
@@ -51,7 +51,7 @@ export function AdminPurchaseList({ purchases }: AdminPurchaseListProps) {
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    {format(new Date(purchase.date), "MMM d, yyyy")}
+                                    {formatUtcDate(purchase.date)}
                                 </div>
                             </TableCell>
                             <TableCell>

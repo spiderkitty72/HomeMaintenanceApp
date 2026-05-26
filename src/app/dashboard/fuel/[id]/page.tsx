@@ -1,6 +1,6 @@
 import { getFuelRecord, getFuelRecords } from "@/lib/actions/fuel";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 import {
     Calendar,
     Calculator,
@@ -136,7 +136,7 @@ export default async function FuelDetailPage({ params }: { params: Promise<{ id:
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-lg font-bold">{format(new Date(record.date), "MMM d, yyyy")}</p>
+                        <p className="text-lg font-bold">{formatUtcDate(record.date)}</p>
                     </CardContent>
                 </Card>
 
@@ -264,17 +264,34 @@ export default async function FuelDetailPage({ params }: { params: Promise<{ id:
                                                 className="group block relative aspect-[4/3] rounded-lg overflow-hidden border bg-muted"
                                             >
                                                 {isImg ? (
-                                                    <img
-                                                        src={attachment.url}
-                                                        alt="Fuel Receipt"
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                    />
+                                                    <>
+                                                        <img
+                                                            src={attachment.url}
+                                                            alt={attachment.name || "Fuel Receipt"}
+                                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <p className="text-white text-sm font-medium">View Full Image</p>
+                                                        </div>
+                                                        {attachment.name && (
+                                                            <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 z-10">
+                                                                <p className="text-[10px] font-medium text-white truncate text-center">
+                                                                    {attachment.name}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
                                                         <FileText className="h-10 w-10 text-primary mb-2 transition-transform group-hover:scale-105" />
                                                         <span className="text-sm font-semibold text-foreground truncate w-full px-2">
-                                                            {getFileDisplayLabel(attachment.url)}
+                                                            {attachment.name || getFileDisplayLabel(attachment.url)}
                                                         </span>
+                                                        {attachment.name && (
+                                                            <span className="text-[9px] text-muted-foreground mt-0.5">
+                                                                {attachment.url.split('.').pop()?.toUpperCase()} Document
+                                                            </span>
+                                                        )}
                                                         <span className="text-xs text-muted-foreground mt-1">Click to view document</span>
                                                     </div>
                                                 )}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FuelRecord } from "@prisma/client";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 import {
     LineChart,
     Line,
@@ -60,8 +60,8 @@ export function FuelChart({ records }: FuelChartProps) {
                 validDistance += distance;
 
                 chartData.push({
-                    date:      format(new Date(cur.date), "MMM d"),
-                    fullDate:  format(new Date(cur.date), "MMM d, yyyy"),
+                    date:      formatUtcDate(cur.date, "MMM d"),
+                    fullDate:  formatUtcDate(cur.date),
                     timestamp: new Date(cur.date).getTime(),
                     mpg:       Number(mpg.toFixed(2)),
                     price:     Number(cur.pricePerGallon.toFixed(3)),
