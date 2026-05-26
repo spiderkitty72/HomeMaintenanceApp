@@ -262,10 +262,17 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                                 <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md overflow-hidden border hover:opacity-80 transition-opacity block bg-muted">
                                                     <Image
                                                         src={attachment.url}
-                                                        alt="Asset photo"
+                                                        alt={attachment.name || "Asset photo"}
                                                         fill
                                                         className="object-cover"
                                                     />
+                                                    {attachment.name && (
+                                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 z-10">
+                                                            <p className="text-[10px] font-medium text-white truncate text-center">
+                                                                {attachment.name}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </a>
                                             );
                                         }
@@ -274,8 +281,13 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                             <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md border hover:opacity-85 transition-all flex flex-col items-center justify-center p-3 bg-muted hover:bg-muted/70 text-center">
                                                 <FileText className="h-8 w-8 text-primary mb-1.5" />
                                                 <span className="text-[11px] font-semibold text-foreground truncate w-full px-1">
-                                                    {getFileDisplayLabel(attachment.url)}
+                                                    {attachment.name || getFileDisplayLabel(attachment.url)}
                                                 </span>
+                                                {attachment.name && (
+                                                    <span className="text-[9px] text-muted-foreground mt-0.5">
+                                                        {attachment.url.split('.').pop()?.toUpperCase()} Document
+                                                    </span>
+                                                )}
                                                 <span className="text-[9px] text-muted-foreground mt-1">Click to view</span>
                                             </a>
                                         );

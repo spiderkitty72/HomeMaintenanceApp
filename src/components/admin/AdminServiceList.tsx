@@ -16,7 +16,7 @@ import { deleteServiceRecord } from "@/lib/actions/service";
 import { toast } from "sonner";
 import { Wrench, Trash2, Search, Calendar, User, Hammer, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 
 interface AdminServiceListProps {
     records: any[];
@@ -72,7 +72,7 @@ export function AdminServiceList({ records }: AdminServiceListProps) {
                             <TableRow key={record.id}>
                                 <TableCell>
                                     <div className="flex flex-col text-sm">
-                                        <span className="font-medium">{format(new Date(record.date), "MMM d, yyyy")}</span>
+                                        <span className="font-medium">{formatUtcDate(record.date)}</span>
                                         <span className="text-xs text-muted-foreground">{record.vendor || "No Vendor"}</span>
                                     </div>
                                 </TableCell>

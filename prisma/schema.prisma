@@ -293,6 +293,7 @@ model Attachment {
   id             String   @id @default(cuid())
   url            String
   fileType       String
+  name           String?
   
   // Polymorphic-like associations (optional relations)
   serviceRecordId String?

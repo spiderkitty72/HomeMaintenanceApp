@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -37,6 +37,7 @@ const fuelSchema = z.object({
     isFullTank: z.boolean().default(true),
     missedPrevious: z.boolean().default(false),
     image: z.string().optional(),
+    imageName: z.string().optional(),
 });
 
 type FuelFormValues = z.infer<typeof fuelSchema>;
@@ -54,6 +55,11 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
     const [open, setOpen] = useState(false);
     const isEditing = !!fuelRecord;
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const form = useForm<FuelFormValues>({
         resolver: zodResolver(fuelSchema) as any,
         values: {
@@ -65,6 +71,7 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
             isFullTank: fuelRecord?.isFullTank ?? true,
             missedPrevious: fuelRecord?.missedPrevious ?? false,
             image: fuelRecord?.attachments?.[0]?.url ?? "",
+            imageName: fuelRecord?.attachments?.[0]?.name ?? "",
         },
     });
 
@@ -180,6 +187,15 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
         }
     }
 
+    if (!mounted) {
+        return trigger || (
+            <Button size="sm" className="gap-2">
+                <Fuel className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs font-semibold">Log Fuel</span>
+            </Button>
+        );
+    }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -213,6 +229,22 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
                                 </FormItem>
                             )}
                         />
+
+                        {form.watch("image") && (
+                            <FormField
+                                control={form.control}
+                                name="imageName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Receipt Name / Description</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. Fuel Receipt, Card Statement" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         <FormField
                             control={form.control}

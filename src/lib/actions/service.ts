@@ -18,6 +18,7 @@ const ServiceRecordSchema = z.object({
     totalCost: z.number(),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    imageName: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
@@ -60,6 +61,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
             await tx.attachment.create({
                 data: {
                     url: data.image,
+                    name: data.imageName || "Receipt",
                     fileType: isImage ? "IMAGE" : "DOCUMENT",
                     serviceRecordId: serviceRecord.id,
                 },
@@ -235,7 +237,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         throw new Error("Unauthorized to update this record");
     }
 
-    const { image, parts, fulfilledScheduleIds, ...serviceData } = data;
+    const { image, imageName, parts, fulfilledScheduleIds, ...serviceData } = data;
 
     const result = await prisma.$transaction(async (tx) => {
         // 1. Revert current inventory changes per-part (fallback to record-level for old records)
@@ -305,6 +307,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                 await tx.attachment.create({
                     data: {
                         url: image,
+                        name: imageName || "Receipt",
                         fileType: isImage ? "IMAGE" : "DOCUMENT",
                         serviceRecordId: id,
                     },

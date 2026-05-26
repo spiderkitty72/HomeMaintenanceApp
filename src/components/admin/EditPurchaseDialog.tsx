@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { updatePartPurchase } from "@/lib/actions/inventory";
-import { format } from "date-fns";
+import { formatUtcDate } from "@/lib/utils";
 
 interface EditPurchaseDialogProps {
     purchase: any;
@@ -15,7 +15,7 @@ interface EditPurchaseDialogProps {
 
 export function EditPurchaseDialog({ purchase }: EditPurchaseDialogProps) {
     const [open, setOpen] = useState(false);
-    const [date, setDate] = useState(format(new Date(purchase.date), "yyyy-MM-dd"));
+    const [date, setDate] = useState(formatUtcDate(purchase.date, "yyyy-MM-dd"));
     const [vendor, setVendor] = useState(purchase.vendor || "");
     const [isPending, setIsPending] = useState(false);
 

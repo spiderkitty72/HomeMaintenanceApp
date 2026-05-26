@@ -79,31 +79,38 @@ export function ImageUpload({ onUpload, value, label, disabled, accept = "image/
 
             <div className="flex flex-col items-center justify-center gap-4">
                 {value ? (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center p-4">
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center">
                         {isImage ? (
-                            <Image
-                                src={value}
-                                alt="Uploaded image"
-                                fill
-                                className="object-cover"
-                            />
+                            <a 
+                                href={value} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-full h-full relative block cursor-pointer"
+                            >
+                                <Image
+                                    src={value}
+                                    alt="Uploaded image"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </a>
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-center">
+                            <a 
+                                href={value} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full h-full flex flex-col items-center justify-center text-center p-4 cursor-pointer hover:bg-muted/80 transition-colors"
+                            >
                                 <div className="p-3 bg-primary/10 rounded-full mb-2">
                                     <FileText className="h-8 w-8 text-primary" />
                                 </div>
                                 <span className="text-sm font-semibold text-foreground max-w-[200px] truncate">
                                     {getFileDisplayLabel(value)}
                                 </span>
-                                <a 
-                                    href={value} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-muted-foreground hover:text-primary hover:underline mt-1 cursor-pointer font-medium"
-                                >
-                                    Open Document
-                                </a>
-                            </div>
+                                <span className="text-xs text-muted-foreground mt-1 underline">
+                                    Click to Open
+                                </span>
+                            </a>
                         )}
                         <Button
                             type="button"

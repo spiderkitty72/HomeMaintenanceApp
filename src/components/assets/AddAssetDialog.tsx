@@ -27,7 +27,10 @@ const formSchema = z.object({
     image: z.string().optional(),
     details: z.record(z.string(), z.any()).default({}),
     sharedUserIds: z.array(z.string()).default([]),
-    attachments: z.array(z.string()).default([]),
+    attachments: z.array(z.object({
+        url: z.string(),
+        name: z.string().optional(),
+    })).default([]),
     customSpecs: z.array(z.object({ key: z.string(), value: z.string() })).default([]),
 });
 
@@ -44,6 +47,11 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableUsers, setAvailableUsers] = useState<any[]>([]);
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     useEffect(() => {
         if (open) {
             getUsersPublic().then(setAvailableUsers).catch(console.error);
@@ -56,7 +64,10 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
         .filter(([key]) => !PREDEFINED_KEYS.includes(key))
         .map(([key, value]) => ({ key, value: String(value) }));
 
-    const initialAttachments = (asset as any)?.attachments?.map((a: any) => a.url) || [];
+    const initialAttachments = (asset as any)?.attachments?.map((a: any) => ({
+        url: a.url,
+        name: a.name || "",
+    })) || [];
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
@@ -116,12 +127,12 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
 
     const addAttachment = (url: string) => {
         if (url) {
-            form.setValue("attachments", [...attachments, url]);
+            form.setValue("attachments", [...attachments, { url, name: "" }] as any);
         }
     };
 
     const removeAttachment = (index: number) => {
-        form.setValue("attachments", attachments.filter((_, i) => i !== index));
+        form.setValue("attachments", attachments.filter((_, i) => i !== index) as any);
     };
 
     const addCustomSpec = () => {
@@ -131,6 +142,14 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
     const removeCustomSpec = (index: number) => {
         form.setValue("customSpecs", customSpecs.filter((_, i) => i !== index));
     };
+
+    if (!mounted) {
+        return trigger || (
+            <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" /> Add Asset
+            </Button>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -436,39 +455,71 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                             <FormLabel className="flex items-center gap-2">
                                 Photos & Documents
                             </FormLabel>
-                            <div className="grid grid-cols-2 gap-4">
-                                {attachments.map((url, index) => {
+                            <div className="space-y-3">
+                                {attachments.map((att: any, index) => {
+                                    const url = typeof att === "string" ? att : att.url;
+                                    const name = typeof att === "string" ? "" : (att.name || "");
+
                                     const isImage = (u: string) => {
                                         const ext = u.split(".").pop()?.toLowerCase();
                                         return ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
                                     };
-                                    const getFileDisplayLabel = (u: string) => {
-                                        const fileName = u.split("/").pop() || "";
-                                        const ext = fileName.split(".").pop()?.toUpperCase() || "";
-                                        return ext ? `${ext} Document` : "Document";
-                                    };
                                     const isImg = isImage(url);
 
                                     return (
-                                        <div key={index} className="relative aspect-video rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center p-3">
-                                            {isImg ? (
-                                                <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover absolute inset-0" />
-                                            ) : (
-                                                <>
-                                                    <FileText className="h-8 w-8 text-primary mb-1" />
-                                                    <span className="text-xs font-semibold text-foreground text-center truncate w-full px-2">
-                                                        {getFileDisplayLabel(url)}
-                                                    </span>
-                                                </>
-                                            )}
+                                        <div key={index} className="flex gap-3 items-center border p-3 rounded-lg bg-muted/30">
+                                            {/* Thumbnail preview */}
+                                            <div className="relative h-14 w-20 rounded-md overflow-hidden border bg-muted shrink-0 flex items-center justify-center">
+                                                {isImg ? (
+                                                    <a 
+                                                        href={url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="w-full h-full block cursor-pointer"
+                                                        title="Click to view full size"
+                                                    >
+                                                        <img src={url} alt={name || "Attachment"} className="w-full h-full object-cover" />
+                                                    </a>
+                                                ) : (
+                                                    <a 
+                                                        href={url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="w-full h-full flex flex-col items-center justify-center text-center p-2 cursor-pointer hover:bg-muted/80 transition-colors"
+                                                        title="Click to open document"
+                                                    >
+                                                        <FileText className="h-5 w-5 text-primary" />
+                                                        <span className="text-[8px] text-muted-foreground mt-0.5 truncate max-w-full">
+                                                            {url.split(".").pop()?.toUpperCase()}
+                                                        </span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                            {/* Name input */}
+                                            <div className="flex-1">
+                                                <Input 
+                                                    placeholder={isImg ? "Give this image a name (e.g. Side View, Interior)" : "Give this document a name (e.g. Contract, Invoice)"} 
+                                                    value={name}
+                                                    onChange={(e) => {
+                                                        const updated = [...attachments] as any[];
+                                                        updated[index] = { 
+                                                            url, 
+                                                            name: e.target.value 
+                                                        };
+                                                        form.setValue("attachments", updated);
+                                                    }}
+                                                    className="h-9 text-xs"
+                                                />
+                                            </div>
+                                            {/* Remove button */}
                                             <Button
                                                 type="button"
-                                                variant="destructive"
+                                                variant="ghost"
                                                 size="icon"
-                                                className="absolute top-1 right-1 h-6 w-6 rounded-full z-10 shadow"
+                                                className="text-destructive hover:bg-destructive/10 h-9 w-9 shrink-0"
                                                 onClick={() => removeAttachment(index)}
                                             >
-                                                <Trash2 className="h-3 w-3" />
+                                                <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     );

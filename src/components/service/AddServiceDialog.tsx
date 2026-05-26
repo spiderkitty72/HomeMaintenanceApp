@@ -26,6 +26,7 @@ const serviceSchema = z.object({
     totalCost: z.coerce.number().min(0),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    imageName: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string().min(1, "Part is required"),
         quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0"),
@@ -52,6 +53,11 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
     const isEditing = !!serviceRecord;
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const form = useForm<ServiceFormValues>({
         resolver: zodResolver(serviceSchema) as any,
         values: {
@@ -68,6 +74,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 inventorySystemId: p.inventorySystemId ?? "",
             })) || [],
             image: serviceRecord?.attachments?.[0]?.url ?? "",
+            imageName: serviceRecord?.attachments?.[0]?.name ?? "",
             fulfilledScheduleIds: [],
         },
     });
@@ -148,6 +155,17 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
         const { isDue, reason } = isScheduleDue(schedule, new Date(dateStr || new Date()), Number(usageStr || 0));
         return { ...schedule, isDue, reason };
     }).sort((a: any, b: any) => (a.isDue === b.isDue ? 0 : a.isDue ? -1 : 1)) || [];
+
+    if (!mounted) {
+        return trigger || (
+            <Button variant={isEditing ? "outline" : "default"} size="sm" className="gap-2">
+                {isEditing ? <Edit2 className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
+                <span className={isEditing ? "" : "hidden sm:inline text-xs font-semibold"}>
+                    {isEditing ? "Edit" : "Add Service"}
+                </span>
+            </Button>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -437,6 +455,22 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                 </FormItem>
                             )}
                         />
+
+                        {form.watch("image") && (
+                            <FormField
+                                control={form.control}
+                                name="imageName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Receipt Name / Description</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. Invoice, Receipt Copy, Warranty Copy" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         <FormField
                             control={form.control}
