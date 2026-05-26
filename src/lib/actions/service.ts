@@ -55,10 +55,12 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         });
 
         if (data.image) {
+            const ext = data.image.split(".").pop()?.toLowerCase();
+            const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
             await tx.attachment.create({
                 data: {
                     url: data.image,
-                    fileType: "IMAGE",
+                    fileType: isImage ? "IMAGE" : "DOCUMENT",
                     serviceRecordId: serviceRecord.id,
                 },
             });
@@ -298,10 +300,12 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                 where: { serviceRecordId: id },
             });
             if (image) {
+                const ext = image.split(".").pop()?.toLowerCase();
+                const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
                 await tx.attachment.create({
                     data: {
                         url: image,
-                        fileType: "IMAGE",
+                        fileType: isImage ? "IMAGE" : "DOCUMENT",
                         serviceRecordId: id,
                     },
                 });

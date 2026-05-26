@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, X, FileText, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -11,9 +11,23 @@ interface ImageUploadProps {
     value?: string;
     label?: string;
     disabled?: boolean;
+    accept?: string;
 }
 
-export function ImageUpload({ onUpload, value, label, disabled }: ImageUploadProps) {
+const isImageUrl = (url: string) => {
+    if (!url) return false;
+    const ext = url.split(".").pop()?.toLowerCase();
+    return ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+};
+
+const getFileDisplayLabel = (url: string) => {
+    if (!url) return "";
+    const fileName = url.split("/").pop() || "";
+    const ext = fileName.split(".").pop()?.toUpperCase() || "";
+    return ext ? `${ext} Document` : "Document";
+};
+
+export function ImageUpload({ onUpload, value, label, disabled, accept = "image/*" }: ImageUploadProps) {
     const [loading, setLoading] = useState(false);
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,9 +53,9 @@ export function ImageUpload({ onUpload, value, label, disabled }: ImageUploadPro
 
             const data = await res.json();
             onUpload(data.url);
-            toast.success("Image uploaded");
+            toast.success("File uploaded successfully");
         } catch (error) {
-            toast.error("Failed to upload image");
+            toast.error("Failed to upload file");
         } finally {
             setLoading(false);
         }
@@ -51,24 +65,51 @@ export function ImageUpload({ onUpload, value, label, disabled }: ImageUploadPro
         onUpload("");
     };
 
+    const isImage = isImageUrl(value || "");
+    
+    // Build standard message for supported formats
+    const isImageOnly = accept === "image/*";
+    const formatsMessage = isImageOnly 
+        ? "PNG, JPG or WEBP (MAX. 5MB)" 
+        : "PNG, JPG, WEBP, PDF, DOCX, etc. (MAX. 5MB)";
+
     return (
         <div className="space-y-2">
             {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
 
             <div className="flex flex-col items-center justify-center gap-4">
                 {value ? (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted">
-                        <Image
-                            src={value}
-                            alt="Uploaded image"
-                            fill
-                            className="object-cover"
-                        />
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center p-4">
+                        {isImage ? (
+                            <Image
+                                src={value}
+                                alt="Uploaded image"
+                                fill
+                                className="object-cover"
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="p-3 bg-primary/10 rounded-full mb-2">
+                                    <FileText className="h-8 w-8 text-primary" />
+                                </div>
+                                <span className="text-sm font-semibold text-foreground max-w-[200px] truncate">
+                                    {getFileDisplayLabel(value)}
+                                </span>
+                                <a 
+                                    href={value} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-muted-foreground hover:text-primary hover:underline mt-1 cursor-pointer font-medium"
+                                >
+                                    Open Document
+                                </a>
+                            </div>
+                        )}
                         <Button
                             type="button"
                             variant="destructive"
                             size="icon"
-                            className="absolute top-2 right-2 h-7 w-7 rounded-full shadow-lg"
+                            className="absolute top-2 right-2 h-7 w-7 rounded-full shadow-lg z-10"
                             onClick={removeImage}
                             disabled={disabled}
                         >
@@ -89,14 +130,14 @@ export function ImageUpload({ onUpload, value, label, disabled }: ImageUploadPro
                                         <p className="mb-2 text-sm text-muted-foreground">
                                             <span className="font-semibold text-primary">Click to upload</span> or drag and drop
                                         </p>
-                                        <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (MAX. 5MB)</p>
+                                        <p className="text-xs text-muted-foreground">{formatsMessage}</p>
                                     </>
                                 )}
                             </div>
                             <input
                                 type="file"
                                 className="hidden"
-                                accept="image/*"
+                                accept={accept}
                                 onChange={handleUpload}
                                 disabled={disabled || loading}
                             />
@@ -107,3 +148,4 @@ export function ImageUpload({ onUpload, value, label, disabled }: ImageUploadPro
         </div>
     );
 }
+

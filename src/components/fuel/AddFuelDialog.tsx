@@ -206,6 +206,7 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
                                             onUpload={field.onChange}
                                             value={field.value}
                                             label="Receipt Photo"
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                                         />
                                     </FormControl>
                                     <FormMessage />

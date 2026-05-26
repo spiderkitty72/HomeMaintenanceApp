@@ -52,10 +52,14 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
                     })) || [],
                 },
                 attachments: attachments?.length > 0 ? {
-                    create: attachments.map((url: string) => ({
-                        url,
-                        fileType: "image"
-                    }))
+                    create: attachments.map((url: string) => {
+                        const ext = url.split(".").pop()?.toLowerCase();
+                        const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+                        return {
+                            url,
+                            fileType: isImage ? "image" : "document"
+                        };
+                    })
                 } : undefined,
             },
         });
@@ -270,11 +274,15 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
                 // Create new attachments
                 if (attachments.length > 0) {
                     await tx.attachment.createMany({
-                        data: attachments.map((url: string) => ({
-                            assetId: id,
-                            url,
-                            fileType: "image",
-                        })),
+                        data: attachments.map((url: string) => {
+                            const ext = url.split(".").pop()?.toLowerCase();
+                            const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+                            return {
+                                assetId: id,
+                                url,
+                                fileType: isImage ? "image" : "document",
+                            };
+                        }),
                     });
                 }
             }

@@ -430,6 +430,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                         <ImageUpload
                                             onUpload={field.onChange}
                                             value={field.value}
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                                         />
                                     </FormControl>
                                     <FormMessage />

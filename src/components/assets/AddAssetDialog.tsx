@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
 import { createAsset, updateAsset } from "@/lib/actions/assets";
 import { getUsersPublic } from "@/lib/actions/users";
-import { Plus, Users, Trash2 } from "lucide-react";
+import { Plus, Users, Trash2, FileText } from "lucide-react";
 import { useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -434,25 +434,51 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                         {/* Multiple Pictures Section */}
                         <div className="space-y-4 pt-2 border-t">
                             <FormLabel className="flex items-center gap-2">
-                                Additional Photos
+                                Photos & Documents
                             </FormLabel>
                             <div className="grid grid-cols-2 gap-4">
-                                {attachments.map((url, index) => (
-                                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border">
-                                        <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-6 w-6 rounded-full"
-                                            onClick={() => removeAttachment(index)}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                {attachments.map((url, index) => {
+                                    const isImage = (u: string) => {
+                                        const ext = u.split(".").pop()?.toLowerCase();
+                                        return ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+                                    };
+                                    const getFileDisplayLabel = (u: string) => {
+                                        const fileName = u.split("/").pop() || "";
+                                        const ext = fileName.split(".").pop()?.toUpperCase() || "";
+                                        return ext ? `${ext} Document` : "Document";
+                                    };
+                                    const isImg = isImage(url);
+
+                                    return (
+                                        <div key={index} className="relative aspect-video rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center p-3">
+                                            {isImg ? (
+                                                <img src={url} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover absolute inset-0" />
+                                            ) : (
+                                                <>
+                                                    <FileText className="h-8 w-8 text-primary mb-1" />
+                                                    <span className="text-xs font-semibold text-foreground text-center truncate w-full px-2">
+                                                        {getFileDisplayLabel(url)}
+                                                    </span>
+                                                </>
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-1 right-1 h-6 w-6 rounded-full z-10 shadow"
+                                                onClick={() => removeAttachment(index)}
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <ImageUpload onUpload={addAttachment} label="Upload an additional photo" />
+                            <ImageUpload 
+                                onUpload={addAttachment} 
+                                label="Upload a photo or document" 
+                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                            />
                         </div>
 
                         {/* Sharing Section */}
