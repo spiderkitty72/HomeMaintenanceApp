@@ -11,7 +11,8 @@ import {
     Paperclip,
     ChevronLeft,
     Fuel,
-    CircleDashed
+    CircleDashed,
+    FileText
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -242,21 +243,44 @@ export default async function FuelDetailPage({ params }: { params: Promise<{ id:
                         <CardContent>
                             {record.attachments && record.attachments.length > 0 ? (
                                 <div className="space-y-4">
-                                    {record.attachments.map((attachment) => (
-                                        <a
-                                            key={attachment.id}
-                                            href={attachment.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group block relative aspect-[4/3] rounded-lg overflow-hidden border bg-muted"
-                                        >
-                                            <img
-                                                src={attachment.url}
-                                                alt="Fuel Receipt"
-                                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                            />
-                                        </a>
-                                    ))}
+                                    {record.attachments.map((attachment) => {
+                                        const isImage = (url: string) => {
+                                            const ext = url.split('.').pop()?.toLowerCase();
+                                            return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext || '');
+                                        };
+                                        const getFileDisplayLabel = (url: string) => {
+                                            const fileName = url.split('/').pop() || '';
+                                            const ext = fileName.split('.').pop()?.toUpperCase() || '';
+                                            return ext ? `${ext} Document` : 'Document';
+                                        };
+                                        const isImg = isImage(attachment.url);
+
+                                        return (
+                                            <a
+                                                key={attachment.id}
+                                                href={attachment.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group block relative aspect-[4/3] rounded-lg overflow-hidden border bg-muted"
+                                            >
+                                                {isImg ? (
+                                                    <img
+                                                        src={attachment.url}
+                                                        alt="Fuel Receipt"
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                                                        <FileText className="h-10 w-10 text-primary mb-2 transition-transform group-hover:scale-105" />
+                                                        <span className="text-sm font-semibold text-foreground truncate w-full px-2">
+                                                            {getFileDisplayLabel(attachment.url)}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground mt-1">Click to view document</span>
+                                                    </div>
+                                                )}
+                                            </a>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className="text-center py-6 text-muted-foreground italic text-xs">
