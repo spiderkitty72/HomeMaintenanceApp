@@ -186,20 +186,29 @@ export async function updateStock(systemId: string, partId: string, quantity: nu
 }
 
 export async function removePartFromSystem(systemId: string, partId: string) {
-  const access = await getSystemAccessLevel(systemId);
-  if (!access || access === "VIEW") throw new Error("Unauthorized: insufficient access");
+  console.log(`[removePartFromSystem] systemId: ${systemId}, partId: ${partId}`);
+  try {
+    const access = await getSystemAccessLevel(systemId);
+    console.log(`[removePartFromSystem] access level: ${access}`);
+    if (!access || access === "VIEW") {
+      console.log(`[removePartFromSystem] Unauthorized access: ${access}`);
+      throw new Error("Unauthorized: insufficient access");
+    }
 
-  await prisma.inventoryItem.delete({
-    where: {
-      inventorySystemId_partId: {
+    const result = await prisma.inventoryItem.deleteMany({
+      where: {
         inventorySystemId: systemId,
         partId,
       },
-    },
-  });
+    });
+    console.log(`[removePartFromSystem] deleted successfully:`, result);
 
-  revalidatePath("/dashboard/parts");
-  revalidatePath("/dashboard/admin");
+    revalidatePath("/dashboard/parts");
+    revalidatePath("/dashboard/admin");
+  } catch (error: any) {
+    console.error(`[removePartFromSystem] ERROR:`, error);
+    throw error;
+  }
 }
 
 export async function getInventoryItems(systemId: string) {

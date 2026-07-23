@@ -13,6 +13,7 @@ npx prisma db seed   # Seed DB (admin@example.com / maintenance)
 npx prisma studio    # GUI for database
 npm run docker:build # Bump version + build Docker image
 npm run docker:up    # Full Docker deploy
+./docker-push.sh     # Build and push version + latest tags to Docker Hub
 ```
 
 No test runner is configured. Linting uses Next.js's built-in ESLint flat config.
