@@ -91,7 +91,6 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
 
     const handleRemoveFromSystem = async (partId: string) => {
         if (selectedSystemId === "none") return;
-        if (!confirm("Stop tracking this part in this inventory system? Its stock data will be removed.")) return;
         try {
             await removePartFromSystem(selectedSystemId, partId);
             toast.success("Part removed from system");
