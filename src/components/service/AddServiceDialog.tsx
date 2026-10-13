@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { Checkbox } from "@/components/ui/checkbox";
 import { isScheduleDue } from "@/lib/predictions";
+import { formatUtcDate, todayInputValue } from "@/lib/utils";
 
 const serviceSchema = z.object({
     date: z.string(),
@@ -61,7 +62,7 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
     const form = useForm<ServiceFormValues>({
         resolver: zodResolver(serviceSchema) as any,
         values: {
-            date: serviceRecord ? new Date(serviceRecord.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            date: serviceRecord ? formatUtcDate(serviceRecord.date, "yyyy-MM-dd") : todayInputValue(),
             usageAtService: serviceRecord?.usageAtService ?? 0,
             summary: serviceRecord?.summary ?? "",
             notes: serviceRecord?.notes ?? "",

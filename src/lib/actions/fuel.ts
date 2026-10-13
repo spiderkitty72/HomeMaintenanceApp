@@ -17,11 +17,12 @@ const FuelRecordSchema = z.object({
     totalCost: z.number(),
     isFullTank: z.boolean(),
     missedPrevious: z.boolean().default(false),
-    image: z.string().optional(),
-    imageName: z.string().optional(),
+    image: z.string().nullish(),
+    imageName: z.string().nullish(),
 });
 
 export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
+    data = FuelRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
@@ -177,6 +178,7 @@ export async function getAllFuelRecordsSystem() {
 }
 
 export async function updateFuelRecord(id: string, data: z.infer<typeof FuelRecordSchema>) {
+    data = FuelRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 

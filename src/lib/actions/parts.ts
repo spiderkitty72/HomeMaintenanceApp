@@ -14,11 +14,12 @@ const PartSchema = z.object({
     assetIds: z.array(z.string()).optional(),
     defaultCost: z.coerce.number().min(0).default(0),
     unitOfMeasure: z.string().min(1, "Unit of measure is required").default("pcs"),
-    image: z.string().optional(),
+    image: z.string().nullish(),
     quantityOnHand: z.coerce.number().optional().default(0),
 });
 
 export async function createPart(data: z.infer<typeof PartSchema>) {
+    data = PartSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
@@ -121,6 +122,7 @@ export async function getParts() {
 }
 
 export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
+    data = PartSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
@@ -179,11 +181,26 @@ export async function deletePart(id: string) {
         throw new Error("Unauthorized to delete this part");
     }
 
+    // Parts referenced by service or purchase history can't be deleted without losing
+    // that history, so deactivate them instead (hidden from lists, history kept).
+    const historyCount = await prisma.servicePart.count({ where: { partId: id } })
+        + await prisma.partPurchaseItem.count({ where: { partId: id } });
+
+    if (historyCount > 0) {
+        await prisma.part.update({
+            where: { id },
+            data: { isActive: false },
+        });
+        revalidatePath("/dashboard", "layout");
+        return { deactivated: true };
+    }
+
     await prisma.part.delete({
         where: { id },
     });
 
     revalidatePath("/dashboard", "layout");
+    return { deactivated: false };
 }
 
 export async function getAllPartsSystem() {

@@ -49,3 +49,11 @@ export function formatUtcDate(
       return `${monthsShort[monthIndex]} ${day}, ${year}`;
   }
 }
+
+/** Today's date in the user's local time zone as "yyyy-MM-dd", for date input defaults. */
+export function todayInputValue(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}

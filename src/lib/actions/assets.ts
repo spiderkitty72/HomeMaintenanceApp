@@ -6,14 +6,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ASSET_TYPES, AssetType, TrackingMethod } from "@/lib/constants";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
-import { differenceInDays } from "date-fns";
+import { getHouseAgeDays, recalculateAssetUsage } from "./usage";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     type: z.string(),
     trackingMethod: z.string(),
+    currentUsage: z.number().min(0).optional(),
     details: z.string().optional(), // JSON string
-    image: z.string().optional(),
+    image: z.string().nullish(),
     sharedUserIds: z.array(z.string()).optional(),
     attachments: z.array(z.object({
         url: z.string(),
@@ -22,6 +23,7 @@ const AssetSchema = z.object({
 });
 
 export async function createAsset(data: z.infer<typeof AssetSchema>) {
+    data = AssetSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
@@ -32,16 +34,11 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
     try {
         const { sharedUserIds, attachments, ...assetDataRaw } = data as any;
         const assetData = { ...assetDataRaw };
-        
-        if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
-            try {
-                const details = JSON.parse(assetData.details);
-                if (details.buildDate) {
-                    assetData.currentUsage = Math.max(0, differenceInDays(new Date(), new Date(details.buildDate)));
-                }
-            } catch (e) {
-                console.error("Failed to parse build date", e);
-            }
+        assetData.manualUsage = assetData.currentUsage ?? 0;
+
+        const houseAgeDays = getHouseAgeDays(assetData.type, assetData.details ?? null);
+        if (houseAgeDays !== null) {
+            assetData.currentUsage = houseAgeDays;
         }
 
         const asset = await prisma.asset.create({
@@ -212,6 +209,7 @@ export async function deleteAsset(id: string) {
 }
 
 export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>) {
+    data = AssetSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
         throw new Error("Unauthorized");
@@ -231,27 +229,25 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
     }
 
     try {
-        const { sharedUserIds, attachments, ...assetDataRaw } = data as any;
+        const { sharedUserIds, attachments, currentUsage, ...assetDataRaw } = data as any;
         const assetData = { ...assetDataRaw };
 
-        if (assetData.type === ASSET_TYPES.HOUSE && assetData.details) {
-            try {
-                const details = JSON.parse(assetData.details);
-                if (details.buildDate) {
-                    assetData.currentUsage = Math.max(0, differenceInDays(new Date(), new Date(details.buildDate)));
-                }
-            } catch (e) {
-                console.error("Failed to parse build date", e);
-            }
+        // A changed reading on the form becomes the new floor; the final currentUsage
+        // is recalculated below from it and the asset's fuel and service records.
+        if (currentUsage !== undefined && currentUsage !== existingAsset.currentUsage) {
+            assetData.manualUsage = currentUsage;
+            assetData.usageUpdatedAt = new Date();
         }
 
         // Use a transaction to ensure atomic update and sharing sync
         const asset = await prisma.$transaction(async (tx) => {
             // Update the asset data
-            const updated = await tx.asset.update({
+            await tx.asset.update({
                 where: { id },
                 data: assetData,
             });
+            await recalculateAssetUsage(tx, id);
+            const updated = await tx.asset.findUniqueOrThrow({ where: { id } });
 
             if (sharedUserIds !== undefined) {
                 // Remove old shares

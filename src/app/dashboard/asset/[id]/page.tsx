@@ -24,7 +24,7 @@ import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { getAssets } from "@/lib/actions/assets";
-import { formatHouseUsage } from "@/lib/utils";
+import { formatHouseUsage, formatUtcDate } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { Badge } from "@/components/ui/badge";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
@@ -160,7 +160,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                 </div>
                                 <div className="font-medium">
                                     {serviceRecords.length > 0
-                                        ? new Date(serviceRecords[0].date).toLocaleDateString()
+                                        ? formatUtcDate(serviceRecords[0].date)
                                         : "None logged"}
                                 </div>
                             </div>

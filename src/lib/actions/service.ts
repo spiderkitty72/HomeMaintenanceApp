@@ -14,11 +14,11 @@ const ServiceRecordSchema = z.object({
     date: z.date(),
     usageAtService: z.number(),
     summary: z.string().min(2),
-    notes: z.string().optional(),
+    notes: z.string().nullish(),
     totalCost: z.number(),
-    vendor: z.string().optional(),
-    image: z.string().optional(),
-    imageName: z.string().optional(),
+    vendor: z.string().nullish(),
+    image: z.string().nullish(),
+    imageName: z.string().nullish(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
@@ -29,6 +29,7 @@ const ServiceRecordSchema = z.object({
 });
 
 export async function createServiceRecord(data: z.infer<typeof ServiceRecordSchema>) {
+    data = ServiceRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -213,6 +214,7 @@ export async function getAllServiceRecordsSystem() {
 }
 
 export async function updateServiceRecord(id: string, data: z.infer<typeof ServiceRecordSchema>) {
+    data = ServiceRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 

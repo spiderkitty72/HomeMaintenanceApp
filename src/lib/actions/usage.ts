@@ -1,5 +1,21 @@
 import { Prisma } from "@prisma/client";
 import { calculateDailyUsage } from "@/lib/predictions";
+import { ASSET_TYPES } from "@/lib/constants";
+import { differenceInDays } from "date-fns";
+
+/**
+ * Days since the build date for a House asset, or null for other assets or when no build date is set.
+ */
+export function getHouseAgeDays(type: string, details: string | null): number | null {
+    if (type !== ASSET_TYPES.HOUSE || !details) return null;
+    try {
+        const { buildDate } = JSON.parse(details);
+        if (!buildDate) return null;
+        return Math.max(0, differenceInDays(new Date(), new Date(buildDate)));
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Recalculates the maximum asset usage and the average daily usage.
@@ -8,6 +24,8 @@ import { calculateDailyUsage } from "@/lib/predictions";
 export async function recalculateAssetUsage(tx: Prisma.TransactionClient, assetId: string) {
     // Note: Prisma.TransactionClient is typically the type of `tx` in prisma.$transaction
     // If not exporting this type easily, `any` or explicit typing could replace it.
+
+    const asset = await tx.asset.findUniqueOrThrow({ where: { id: assetId } });
 
     // 1. Get the max usage from Fuel Records
     const maxFuelRecord = await tx.fuelRecord.findFirst({
@@ -51,6 +69,20 @@ export async function recalculateAssetUsage(tx: Prisma.TransactionClient, assetI
         } else if (maxServiceRecord && maxServiceRecord.usageAtService === maxUsage) {
             usageUpdatedAt = maxServiceRecord.date;
         }
+    }
+
+    // The reading entered on the asset is a floor, so logging an older record or
+    // deleting the latest one never moves the odometer below it.
+    if (asset.manualUsage !== null && asset.manualUsage >= maxUsage) {
+        maxUsage = asset.manualUsage;
+        usageUpdatedAt = asset.usageUpdatedAt;
+    }
+
+    // Houses track age in days since the build date rather than a usage reading
+    const houseAgeDays = getHouseAgeDays(asset.type, asset.details);
+    if (houseAgeDays !== null) {
+        maxUsage = houseAgeDays;
+        usageUpdatedAt = new Date();
     }
 
     // 4. Calculate Daily Usage

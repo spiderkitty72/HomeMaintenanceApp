@@ -17,6 +17,7 @@ const ScheduleSchema = z.object({
 });
 
 export async function createSchedule(data: z.infer<typeof ScheduleSchema>) {
+    data = ScheduleSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -51,6 +52,7 @@ export async function createSchedule(data: z.infer<typeof ScheduleSchema>) {
 }
 
 export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSchema>) {
+    data = ScheduleSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
