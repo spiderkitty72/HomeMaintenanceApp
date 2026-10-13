@@ -57,6 +57,7 @@ export async function getUsersPublic() {
 }
 
 export async function createUser(data: z.infer<typeof CreateUserSchema>) {
+    data = CreateUserSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -95,6 +96,7 @@ export async function deleteUser(userId: string) {
 }
 
 export async function updateUser(userId: string, data: Partial<z.infer<typeof CreateUserSchema>>) {
+    data = CreateUserSchema.partial().parse(data);
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
         throw new Error("Unauthorized");

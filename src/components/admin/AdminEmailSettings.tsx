@@ -117,6 +117,7 @@ export function AdminEmailSettings() {
             await setSystemSetting("reminder_schedule", {
                 ...values,
                 dayOfWeek: parseInt(values.dayOfWeek), // Save as number for the backend
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Day and time are in the admin's local time zone
             });
             toast.success("Reminder Schedule saved successfully");
         } catch (error: any) {
@@ -369,7 +370,7 @@ export function AdminEmailSettings() {
                                     name="time"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Time of Day (HH:MM)</FormLabel>
+                                            <FormLabel>Time of Day (HH:MM, {Intl.DateTimeFormat().resolvedOptions().timeZone})</FormLabel>
                                             <FormControl>
                                                 <Input type="time" {...field} />
                                             </FormControl>

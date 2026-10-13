@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarClock, Plus, Edit2 } from "lucide-react";
 import { createSchedule, updateSchedule } from "@/lib/actions/schedules";
 import { toast } from "sonner";
+import { formatUtcDate, todayInputValue } from "@/lib/utils";
 
 const scheduleSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -64,8 +65,8 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage, sched
             frequencyType: schedule?.frequencyType || (trackingMethod === "DateOnly" ? "Date" : trackingMethod) as any,
             frequencyValue: schedule?.frequencyValue || (trackingMethod === "Mileage" ? 5000 : 365),
             lastPerformedDate: schedule?.lastPerformedDate 
-                ? new Date(schedule.lastPerformedDate).toISOString().split("T")[0] 
-                : new Date().toISOString().split("T")[0],
+                ? formatUtcDate(schedule.lastPerformedDate, "yyyy-MM-dd")
+                : todayInputValue(),
             lastPerformedUsage: schedule?.lastPerformedUsage ?? currentUsage,
         },
     });
