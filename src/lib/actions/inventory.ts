@@ -14,13 +14,14 @@ const PurchaseItemSchema = z.object({
 
 const PurchaseSchema = z.object({
     items: z.array(PurchaseItemSchema).min(1, "At least one item is required"),
-    date: z.coerce.date().default(new Date()),
-    vendor: z.string().optional(),
-    image: z.string().optional(),
+    date: z.coerce.date().default(() => new Date()),
+    vendor: z.string().nullish(),
+    image: z.string().nullish(),
     inventorySystemId: z.string().optional(),
 });
 
 export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
+    data = PurchaseSchema.parse(data);
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) throw new Error("Unauthorized");

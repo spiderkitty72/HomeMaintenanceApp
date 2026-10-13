@@ -6,6 +6,7 @@ import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getExportData } from "@/lib/actions/export";
 import * as XLSX from "xlsx";
+import { formatUtcDate } from "@/lib/utils";
 
 export function ExportDataButton() {
     const [isExporting, setIsExporting] = useState(false);
@@ -37,7 +38,7 @@ export function ExportDataButton() {
                 asset.serviceRecords.forEach((record: any) => {
                     serviceRows.push({
                         "Asset": asset.name,
-                        "Date": new Date(record.date).toLocaleDateString(),
+                        "Date": formatUtcDate(record.date),
                         "Usage": record.usageAtService,
                         "Summary": record.summary,
                         "Vendor": record.vendor || "-",
@@ -55,7 +56,7 @@ export function ExportDataButton() {
                 asset.fuelRecords.forEach((record: any) => {
                     fuelRows.push({
                         "Asset": asset.name,
-                        "Date": record.date ? new Date(record.date).toLocaleDateString() : "-", // Safety check
+                        "Date": record.date ? formatUtcDate(record.date) : "-", // Safety check
                         "Usage": record.usageAtFill,
                         "Gallons": record.gallons,
                         "Price/Gal": record.pricePerGallon,

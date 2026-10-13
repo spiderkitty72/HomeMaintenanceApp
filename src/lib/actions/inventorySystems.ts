@@ -35,6 +35,7 @@ export async function getSystemAccessLevel(systemId: string): Promise<"OWNER" | 
 }
 
 export async function createInventorySystem(data: z.infer<typeof InventorySystemSchema>) {
+  data = InventorySystemSchema.parse(data);
   const session = await auth();
   if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
     throw new Error("Unauthorized");

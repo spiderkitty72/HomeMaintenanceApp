@@ -4,6 +4,14 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
+    // This runs on every container start. Only bootstrap a brand-new database, so a renamed
+    // or deleted default admin (admin@example.com / maintenance) is never re-created.
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+        console.log("Seeding skipped: database already has users.");
+        return;
+    }
+
     const password = "maintenance";
     const hashedPassword = await bcrypt.hash(password, 10);
 
