@@ -194,12 +194,16 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
                                 })()}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                ${part.defaultCost?.toFixed(2) || "0.00"}
+                                {(() => {
+                                    const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                    const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
+                                    return `$${price.toFixed(2)}`;
+                                })()}
                             </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex justify-end gap-1">
                                     <AssignAssetDialog part={part} assets={assets} />
-                                    <AddPartDialog mode="edit" part={part} assets={assets} />
+                                    <AddPartDialog mode="edit" part={part} assets={assets} selectedSystemId={selectedSystemId} />
                                     <Button
                                         variant="ghost"
                                         size="icon"

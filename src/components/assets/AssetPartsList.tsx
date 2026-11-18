@@ -130,7 +130,7 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                     </div>
                                 </div>
                                 <div>
-                                    <AddPartDialog mode="edit" part={part} assets={assets} />
+                                    <AddPartDialog mode="edit" part={part} assets={assets} selectedSystemId={selectedSystemId} />
                                 </div>
                             </div>
                             <div className="flex justify-between items-center pt-3 border-t border-muted text-sm">
@@ -155,7 +155,11 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                     })()}
                                 </div>
                                 <div className="font-mono font-bold">
-                                    ${part.defaultCost?.toFixed(2) || "0.00"}
+                                    {(() => {
+                                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                        const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
+                                        return `$${price.toFixed(2)}`;
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -221,7 +225,11 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-xs font-mono text-muted-foreground">
-                                            ${part.defaultCost?.toFixed(2) || "0.00"} / {part.unitOfMeasure}
+                                            {(() => {
+                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                                const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
+                                                return `$${price.toFixed(2)}`;
+                                            })()} / {part.unitOfMeasure}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -249,7 +257,7 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <AddPartDialog mode="edit" part={part} assets={assets} />
+                                        <AddPartDialog mode="edit" part={part} assets={assets} selectedSystemId={selectedSystemId} />
                                     </TableCell>
                                 </TableRow>
                             ))

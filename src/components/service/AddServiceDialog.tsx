@@ -51,8 +51,20 @@ interface AddServiceDialogProps {
 
 export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules, inventorySystems = [] }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
-    const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
+    const [availableParts, setAvailableParts] = useState<any[]>([]);
     const isEditing = !!serviceRecord;
+
+    const getPartPrice = (partId: string, systemId?: string) => {
+        const p = availableParts.find((x: any) => x.id === partId);
+        if (!p) return 0;
+        if (systemId) {
+            const systemItem = p.inventoryItems?.find((i: any) => i.inventorySystemId === systemId);
+            if (systemItem && systemItem.unitCost !== undefined) {
+                return systemItem.unitCost;
+            }
+        }
+        return p.defaultCost || 0;
+    };
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
@@ -142,10 +154,9 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
     const getPartsForSystem = (sysId: string | undefined) => {
         if (!sysId) return availableParts;
         const system = inventorySystems.find((s: any) => s.id === sysId);
-        if (!system?.items?.length) return availableParts;
-        return system.items
-            .map((item: any) => item.part)
-            .filter(Boolean) as typeof availableParts;
+        if (!system?.items?.length) return [];
+        const systemPartIds = new Set(system.items.map((item: any) => item.partId));
+        return availableParts.filter((part: any) => systemPartIds.has(part.id));
     };
 
     const dateStr = form.watch("date");
@@ -333,10 +344,9 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                                         <Select
                                                             onValueChange={(value) => {
                                                                 field.onChange(value);
-                                                                const selectedPart = availableParts.find(p => p.id === value);
-                                                                if (selectedPart) {
-                                                                    form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
-                                                                }
+                                                                const systemId = form.getValues(`parts.${index}.inventorySystemId`);
+                                                                const price = getPartPrice(value, systemId);
+                                                                form.setValue(`parts.${index}.costPerUnit`, price);
                                                             }}
                                                             value={field.value}
                                                         >
@@ -401,13 +411,19 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                                             onValueChange={(val) => {
                                                                 const newSysId = val === "__none__" ? "" : val;
                                                                 field.onChange(newSysId);
+                                                                const currentPartId = form.getValues(`parts.${index}.partId`);
                                                                 if (newSysId) {
-                                                                    const currentPartId = form.getValues(`parts.${index}.partId`);
                                                                     const partsInNewSystem = getPartsForSystem(newSysId);
                                                                     if (currentPartId && !partsInNewSystem.find(p => p.id === currentPartId)) {
                                                                         form.setValue(`parts.${index}.partId`, "");
                                                                         form.setValue(`parts.${index}.costPerUnit`, 0);
+                                                                    } else if (currentPartId) {
+                                                                        const price = getPartPrice(currentPartId, newSysId);
+                                                                        form.setValue(`parts.${index}.costPerUnit`, price);
                                                                     }
+                                                                } else if (currentPartId) {
+                                                                    const price = getPartPrice(currentPartId, "");
+                                                                    form.setValue(`parts.${index}.costPerUnit`, price);
                                                                 }
                                                             }}
                                                             value={field.value || "__none__"}

@@ -60,7 +60,8 @@ export async function createPart(data: z.infer<typeof PartSchema>) {
         data: {
             inventorySystemId: defaultSystem.id,
             partId: part.id,
-            quantityOnHand: quantityOnHand || 0
+            quantityOnHand: quantityOnHand || 0,
+            unitCost: part.defaultCost || 0
         }
     });
 
@@ -121,7 +122,7 @@ export async function getParts() {
     });
 }
 
-export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
+export async function updatePart(id: string, data: z.infer<typeof PartSchema>, systemId?: string) {
     data = PartSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) {
@@ -156,6 +157,26 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
             }
         },
     });
+
+    if (systemId && systemId !== "none") {
+        await prisma.inventoryItem.upsert({
+            where: {
+                inventorySystemId_partId: {
+                    inventorySystemId: systemId,
+                    partId: id,
+                }
+            },
+            update: {
+                unitCost: partData.defaultCost || 0,
+            },
+            create: {
+                inventorySystemId: systemId,
+                partId: id,
+                quantityOnHand: 0,
+                unitCost: partData.defaultCost || 0,
+            }
+        });
+    }
 
     revalidatePath("/dashboard", "layout");
     return part;

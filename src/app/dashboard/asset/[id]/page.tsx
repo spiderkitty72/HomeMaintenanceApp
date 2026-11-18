@@ -24,7 +24,7 @@ import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { getAssets } from "@/lib/actions/assets";
-import { formatHouseUsage, formatUtcDate } from "@/lib/utils";
+import { formatHouseUsage, formatUtcDate, getDynamicAssetUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { Badge } from "@/components/ui/badge";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
@@ -53,6 +53,9 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
     if (!asset) {
         notFound();
     }
+
+    // Calculate dynamic age/usage for DateOnly/House assets
+    asset.currentUsage = getDynamicAssetUsage(asset);
 
     const [
         serviceRecords,
