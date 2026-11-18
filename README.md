@@ -1,116 +1,140 @@
-# Maintenance App
+# MaintenanceApp
 
-WARNING:
+## Warning
 This project is 99% Vibe Coded. This is a personal project and the intent is not to make this useful for everyone and every application. The intent is a simple easy to use web based application that I can run on my server in docker to track maintenance on my home, vechicles and utility equipment.
 
-A comprehensive maintenance tracking system designed to help you manage assets (vehicles, equipment, property), track service history, monitor fuel usage, and stay on top of maintenance schedules.
+## Overview
+MaintenanceApp is a self-hosted, web-based maintenance tracker for assets like vehicles, equipment, and property. You log what you own, record service and fuel history against it, and let the app tell you when something's due.
 
-## 🚀 Key Features
+## How it works
 
-- **Asset Management**: Track unlimited assets with flexible tracking methods (Mileage, Hours, or Date-only).
-- **Service Records**: Maintain detailed service history including summary, notes, vendor information, and total costs.
-- **Fuel Tracking**: Log fuel fills to monitor consumption, price fluctuations, and efficiency.
-- **Parts Inventory**: Manage a catalog of parts with stock levels, manufacturer details, and compatibility mapping to assets.
-- **Maintenance Schedules**: Set up recurring maintenance reminders based on usage intervals or calendar dates.
-- **Flexible Permissions**: Robust group-based access control (RBAC) to share assets and manage team collaboration.
-- **Attachment Support**: Upload and link receipts, manuals, or photos directly to records.
-- **Data Export**: Export inventory and records to Excel for external reporting.
-- **Progressive Web App**: Install the app on your device for a native app-like experience.
+Everything in the app hangs off an **asset** — a vehicle, a piece of equipment, a building, whatever you want to maintain. Each asset tracks usage in one of three ways: mileage, hours, or just calendar dates. From there:
 
-## 🛠️ Tech Stack
+- **Service records** capture each maintenance event — what was done, who did it, cost, notes, and any attached receipts or photos.
+- **Fuel records** log fill-ups so the app can calculate consumption and, combined with service history, estimate how fast an asset accumulates usage (its `dailyUsage` rate).
+- **Schedules** define recurring maintenance (e.g. "oil change every 5,000 miles" or "inspect every 90 days"). Using the asset's usage rate, the app predicts a `nextDueDate` and emails you when a schedule is coming due within 7 days.
+- **Parts inventory** lets you track a parts catalog and stock levels, and link parts to the assets they fit.
+- **Permissions** are group-based: every user gets create + view access by default, and admins can grant edit/delete per resource type, or share individual assets read/write with specific people.
 
-- **Framework**: [Next.js](https://nextjs.org) (App Router)
-- **Database**: [Prisma](https://prisma.io) with **SQLite**
-- **Authentication**: [NextAuth.js](https://next-auth.js.org) (v5)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com) & [Shadcn UI](https://ui.shadcn.com)
-- **Icons**: [Lucide React](https://lucide.dev)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+### Typical workflow
 
-## 🏁 Getting Started
+1. Add an asset and tell it how you want usage tracked (mileage, hours, or date-only).
+2. Log fuel fills and service records as they happen — this is what feeds the usage-rate calculation.
+3. Set up a maintenance schedule for anything recurring.
+4. Let the app run its daily check and email you when something's due within a week.
 
-### Prerequisites
+## Installation
 
-- Node.js 18+ 
-- npm / yarn / pnpm
+### Option A — Docker (recommended)
 
-### Installation
+This is how the app is meant to run day-to-day; it builds an image, runs migrations, seeds the database, and persists data outside the container.
 
-1. **Clone the repository**:
+1. Clone the repo and `cd` into it.
+2. Create the host directories used for persistence:
    ```bash
-   git clone <repository-url>
-   cd maintenance-app
+   mkdir -p data public/uploads
    ```
+3. Edit `docker-compose.yml` and set real values for:
+   ```yaml
+   environment:
+     - AUTH_SECRET=<generate with: npx auth secret>
+     - AUTH_URL=https://your-domain.com   # your public URL, see reverse proxy section below
+   ```
+4. Build and start:
+   ```bash
+   npm run docker:up
+   ```
+   (equivalent to `docker-compose build && docker-compose up -d` — also bumps the package version)
+5. The app listens on container port 3000, published to **host port 3030** by default. Visit `http://localhost:3030`.
 
-2. **Install dependencies**:
+**Data persistence** — the compose file bind-mounts two host directories into the container, so your data survives container rebuilds:
+- `./data` → database (`dev.db`)
+- `./public/uploads` → uploaded attachments
+
+**Default login** (created by the seed step): `admin@example.com` / `maintenance`. Change this password immediately after first login.
+
+### Option B — Manual / development install
+
+1. Install Node.js 18+ and clone the repo.
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-3. **Environment Setup**:
-   Create a `.env` file in the root directory (or use the provided `.env.local` templates):
+3. Create a `.env` file:
    ```env
-   DATABASE_URL="file:./prisma/dev.db"
-   AUTH_SECRET="your-secret-here" # Generate with: npx auth secret
+   DATABASE_URL="file:./dev.db"
+   AUTH_SECRET="your-secret-here"   # generate with: npx auth secret
+   AUTH_TRUST_HOST=true
    ```
-
-4. **Initialize Database**:
+4. Push the schema and seed the database:
    ```bash
    npx prisma db push
-   ```
-
-5. **Seed Initial Data (Admin Account)**:
-   This creates a default admin user and base permission groups.
-   ```bash
    npx prisma db seed
    ```
-   **Default Credentials:**
-   - **Email**: `admin@example.com`
-   - **Password**: `maintenance`
-
-6. **Run the Development Server**:
+5. Run it:
    ```bash
    npm run dev
    ```
-   Open [http://localhost:3000](http://localhost:3000) to see the application.
+   Visit `http://localhost:3000`.
 
-## 🐳 Docker Support
+For production without Docker, use `npm run build` (Next.js webpack build) then `npm start`, and set `AUTH_URL` to your public address.
 
-You can also run the application using Docker Compose:
+## Putting it behind a reverse proxy
 
-This will spin up the application in production mode on port 3030.
+The app needs three things to work correctly behind a proxy:
 
-```bash
-docker-compose up -d
-```
+1. **`AUTH_TRUST_HOST=true`** — already set in `docker-compose.yml`; add it to your `.env` for a manual install. Without this, NextAuth rejects requests that arrive via a proxy.
+2. **`AUTH_URL`** set to your actual public URL (e.g. `https://maintenance.example.com`), not `localhost`.
+3. **Forwarded headers** — your proxy must pass `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Forwarded-Host` through to the app so it knows the real client IP and whether the original request was HTTPS.
 
-### Data Persistence
+One more thing worth knowing: server actions (used for file/attachment uploads) are configured with a **10MB body size limit** (`next.config.ts`). If your proxy has its own request-size cap, raise it to match or uploads will fail before they reach the app.
 
-The app is configured to use **bind mounts** for data persistence. This ensures your database and uploads are stored safely on your host machine even if the container is removed:
+### Nginx
 
-- **Database**: Stored in `./data/dev.db`
-- **Uploads**: Stored in `./public/uploads/`
-
-> [!NOTE]
-> Ensure the `./data` and `./public/uploads` directories exist on your host machine to avoid permission issues when the container starts.
-
-## 🔒 Reverse Proxy & Security
-
-If you are running this app behind a reverse proxy (Nginx, Caddy, etc.):
-
-1.  **Trust Headers**: The app is already configured with `AUTH_TRUST_HOST=true` in `docker-compose.yml`.
-2.  **Public URL**: Set the `AUTH_URL` environment variable to your public address (e.g., `https://maintenance.example.com`).
-3.  **Proxy Configuration**: Ensure your proxy passes `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Forwarded-Host` headers.
-
-### Nginx Example
 ```nginx
-location / {
-    proxy_pass http://localhost:3030;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+server {
+    listen 443 ssl;
+    server_name maintenance.example.com;
+
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass http://localhost:3030;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
 }
 ```
 
-## 📄 License
+### Caddy
 
-Check individual file headers or the license file for details.
+```caddyfile
+maintenance.example.com {
+    reverse_proxy localhost:3030
+    request_body {
+        max_size 10MB
+    }
+}
+```
+
+Caddy sets `X-Forwarded-For`, `X-Forwarded-Proto`, and `Host` automatically — no extra header config needed.
+
+### Traefik (docker labels)
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.maintenance.rule=Host(`maintenance.example.com`)"
+  - "traefik.http.routers.maintenance.entrypoints=websecure"
+  - "traefik.http.routers.maintenance.tls.certresolver=letsencrypt"
+  - "traefik.http.services.maintenance.loadbalancer.server.port=3000"
+```
+
+Traefik forwards the standard `X-Forwarded-*` headers by default.
+
+## Notes
+
+- SMTP settings for the maintenance-reminder emails are configured in-app (System Settings), not via environment variables.
+- If you change the host port mapping in `docker-compose.yml` (the `3030:3000` line), update any proxy config that references port 3030 to match.

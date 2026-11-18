@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { getSmtpTransport } from "./email";
 import { addDays, differenceInDays } from "date-fns";
 import { isScheduleDue } from "./predictions";
+import { getDynamicAssetUsage } from "./utils";
 
 export async function processServiceReminders() {
     try {
@@ -40,6 +41,7 @@ export async function processServiceReminders() {
         }> = {};
 
         for (const asset of assets) {
+            asset.currentUsage = getDynamicAssetUsage(asset);
             const currentUsage = asset.currentUsage;
             let dailyUsage = (asset as any).dailyUsage || 0;
             const usageUpdatedAt = (asset as any).usageUpdatedAt;

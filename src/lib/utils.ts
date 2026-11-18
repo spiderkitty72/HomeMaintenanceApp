@@ -1,9 +1,44 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { differenceInDays } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export function getDynamicAssetUsage(asset: {
+  type: string;
+  trackingMethod: string;
+  details?: string | null;
+  currentUsage: number;
+}): number {
+  if (asset.type === "House" || asset.trackingMethod === "DateOnly") {
+    if (asset.details) {
+      try {
+        const details = typeof asset.details === "string" ? JSON.parse(asset.details) : asset.details;
+        if (details && details.buildDate) {
+          return Math.max(0, differenceInDays(new Date(), new Date(details.buildDate)));
+        }
+      } catch (e) {
+        console.error("Failed to parse build date for dynamic age:", e);
+      }
+    }
+  }
+  return asset.currentUsage;
+}
+
+export function withDynamicUsage<T extends { type: string; trackingMethod: string; details?: string | null; currentUsage: number }>(asset: T): T {
+  if (!asset) return asset;
+  return {
+    ...asset,
+    currentUsage: getDynamicAssetUsage(asset)
+  };
+}
+
+export function withDynamicUsageList<T extends { type: string; trackingMethod: string; details?: string | null; currentUsage: number }>(assets: T[]): T[] {
+  return assets.map(withDynamicUsage);
+}
+
 
 export function formatHouseUsage(totalDays: number): string {
   const years = Math.floor(totalDays / 365);
