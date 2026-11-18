@@ -3,10 +3,17 @@ import { getSmtpTransport } from "./email";
 import { addDays, differenceInDays } from "date-fns";
 import { isScheduleDue } from "./predictions";
 import { getDynamicAssetUsage } from "./utils";
+import { sendPushToUser } from "./push";
 
 export async function processServiceReminders() {
     try {
-        const { transporter, smtpSettings } = await getSmtpTransport();
+        // Email is optional: without SMTP settings, reminders still go out as push notifications.
+        let smtp: Awaited<ReturnType<typeof getSmtpTransport>> | null = null;
+        try {
+            smtp = await getSmtpTransport();
+        } catch {
+            smtp = null;
+        }
 
         // 1. Fetch assets and evaluate their schedules
         const assets = await prisma.asset.findMany({
@@ -36,9 +43,10 @@ export async function processServiceReminders() {
 
         const targetDate = addDays(new Date(), 7); // Exactly 7 days from now
 
+        // Keyed by user id so each person gets one digest, by email and on their devices.
         const emailsToSend: Record<string, {
-            user: { name: string | null; email: string };
-            dueSchedules: { assetName: string; scheduleName: string; reason: string }[]
+            user: { id: string; name: string | null; email: string | null };
+            dueSchedules: { assetId: string; assetName: string; scheduleName: string; reason: string }[]
         }> = {};
 
         for (const asset of assets) {
@@ -61,6 +69,7 @@ export async function processServiceReminders() {
 
                 if (isDue) {
                     dueSchedules.push({
+                        assetId: asset.id,
                         assetName: asset.name,
                         scheduleName: schedule.name,
                         reason
@@ -69,36 +78,42 @@ export async function processServiceReminders() {
             }
 
             if (dueSchedules.length > 0) {
-                // Add owner
-                if (asset.owner.email) {
-                    if (!emailsToSend[asset.owner.email]) {
-                        emailsToSend[asset.owner.email] = {
-                            user: { name: asset.owner.name, email: asset.owner.email },
+                // Owner and everyone the asset is shared with
+                for (const person of [asset.owner, ...asset.sharedWith.map((share) => share.user)]) {
+                    if (!emailsToSend[person.id]) {
+                        emailsToSend[person.id] = {
+                            user: { id: person.id, name: person.name, email: person.email },
                             dueSchedules: []
                         };
                     }
-                    emailsToSend[asset.owner.email].dueSchedules.push(...dueSchedules);
-                }
-
-                // Add shared users
-                for (const share of asset.sharedWith) {
-                    if (share.user.email) {
-                        if (!emailsToSend[share.user.email]) {
-                            emailsToSend[share.user.email] = {
-                                user: { name: share.user.name, email: share.user.email },
-                                dueSchedules: []
-                            };
-                        }
-                        emailsToSend[share.user.email].dueSchedules.push(...dueSchedules);
-                    }
+                    emailsToSend[person.id].dueSchedules.push(...dueSchedules);
                 }
             }
         }
 
-        // 3. Send emails
+        // 3. Send emails and push notifications
         let emailsSent = 0;
-        for (const userEmail of Object.keys(emailsToSend)) {
-            const data = emailsToSend[userEmail];
+        let pushesSent = 0;
+        for (const userId of Object.keys(emailsToSend)) {
+            const data = emailsToSend[userId];
+
+            const count = data.dueSchedules.length;
+            const first = data.dueSchedules[0];
+            try {
+                const devices = await sendPushToUser(userId, {
+                    title: count === 1 ? `${first.assetName}: ${first.scheduleName} is due` : `${count} maintenance items are due`,
+                    body: count === 1 ? first.reason : data.dueSchedules.slice(0, 3).map((ds) => `${ds.assetName}: ${ds.scheduleName}`).join(", ") + (count > 3 ? ` and ${count - 3} more` : ""),
+                    url: count === 1 ? `/dashboard/asset/${first.assetId}` : "/dashboard",
+                    tag: "maintenance-reminders",
+                });
+                if (devices > 0) pushesSent++;
+            } catch (err) {
+                console.error(`Failed to send push reminder to user ${userId}`, err);
+            }
+
+            if (!smtp || !data.user.email) continue;
+            const { transporter, smtpSettings } = smtp;
+            const userEmail = data.user.email;
 
             // Build HTML
             const htmlMessage = `
@@ -134,7 +149,7 @@ export async function processServiceReminders() {
             }
         }
 
-        return { success: true, emailsSent };
+        return { success: true, emailsSent, pushesSent, emailConfigured: !!smtp };
 
     } catch (error) {
         console.error("Error processing service reminders:", error);

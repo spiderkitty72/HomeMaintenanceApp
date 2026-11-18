@@ -54,6 +54,7 @@ model User {
   assets        Asset[]
   sharedAssets  AssetShare[]
   favoriteAssets AssetFavorite[]
+  pushSubscriptions PushSubscription[]
   parts         Part[]
   groups        GroupMember[]
   partPurchases PartPurchase[]
@@ -159,6 +160,20 @@ model AssetSpec {
   specType   AssetSpecType @relation(fields: [specTypeId], references: [id], onDelete: Cascade)
 
   @@unique([assetId, specTypeId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AssetFavorite {

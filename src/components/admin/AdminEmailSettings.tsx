@@ -147,7 +147,7 @@ export function AdminEmailSettings() {
         try {
             const result = await triggerManualReminders();
             if (result.success) {
-                toast.success(`Successfully ran reminders. Sent ${result.emailsSent} email(s).`);
+                toast.success(`Ran reminders: sent ${result.emailsSent} email(s) and notified ${result.pushesSent ?? 0} user(s) by push.`);
             } else {
                 toast.error(`Error running reminders: ${result.error}`);
             }
