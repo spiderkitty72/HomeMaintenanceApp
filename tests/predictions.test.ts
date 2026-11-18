@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { addDays, differenceInCalendarDays } from "date-fns";
 import { calculateDailyUsage, isScheduleDue, predictNextDueDate } from "@/lib/predictions";
 
-const fuel = (date: string, usageAtFill: number) => ({ date: new Date(date), usageAtFill }) as any;
+type FuelRecord = Parameters<typeof calculateDailyUsage>[0][number];
+type Schedule = Parameters<typeof predictNextDueDate>[0];
+
+const fuel = (date: string, usageAtFill: number) => ({ date: new Date(date), usageAtFill }) as unknown as FuelRecord;
 const schedule = (over: Record<string, unknown>) =>
-    ({ frequencyType: "Mileage", frequencyValue: 5000, lastPerformedUsage: 10000, lastPerformedDate: null, nextDueUsage: null, ...over }) as any;
+    ({ frequencyType: "Mileage", frequencyValue: 5000, lastPerformedUsage: 10000, lastPerformedDate: null, nextDueUsage: null, ...over }) as unknown as Schedule;
 
 describe("calculateDailyUsage", () => {
     it("is the slope between the oldest and newest fill", () => {

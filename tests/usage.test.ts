@@ -30,7 +30,7 @@ function fakeTx(asset: Record<string, unknown>, fuel: Rec[], service: Rec[]) {
             },
         },
     };
-    return { tx: tx as any, result: () => updated };
+    return { tx: tx as unknown as Parameters<typeof recalculateAssetUsage>[0], result: () => updated };
 }
 
 const car = { id: "a1", type: "Car", details: null, manualUsage: 50000, usageUpdatedAt: new Date("2026-01-01"), currentUsage: 50000 };
