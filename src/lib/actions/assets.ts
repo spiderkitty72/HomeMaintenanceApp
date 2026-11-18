@@ -7,6 +7,7 @@ import { z } from "zod";
 import { ensurePermission, checkPermission, ensureAssetAccess } from "@/lib/permissions";
 import { getHouseAgeDays, recalculateAssetUsage } from "./usage";
 import { withDynamicUsageList } from "@/lib/utils";
+import { sortAssetsForDashboard } from "@/lib/assetSort";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -112,13 +113,9 @@ export async function getAssets() {
         },
     });
 
-    // Favorites first, then everything else; each group in alphabetical order by name.
-    const withFavorites = assets
-        .map(({ favoritedBy, ...asset }) => ({ ...asset, isFavorite: favoritedBy.length > 0 }))
-        .sort((a, b) => {
-            if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
-            return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
-        });
+    const withFavorites = sortAssetsForDashboard(
+        assets.map(({ favoritedBy, ...asset }) => ({ ...asset, isFavorite: favoritedBy.length > 0 }))
+    );
 
     return withDynamicUsageList(withFavorites);
 }

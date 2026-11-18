@@ -16,7 +16,7 @@ npm run docker:up    # Full Docker deploy
 ./docker-push.sh     # Build and push version + latest tags to Docker Hub
 ```
 
-No test runner is configured. Linting uses Next.js's built-in ESLint flat config.
+Unit tests use Vitest (`npm test`, files in `tests/`). Linting uses Next.js's built-in ESLint flat config (`npm run lint`).
 
 ## Architecture Overview
 
