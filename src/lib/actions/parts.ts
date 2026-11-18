@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ensurePermission, checkPermission, canAccessAsset } from "@/lib/permissions";
+import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 
 const PartSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -275,6 +275,7 @@ export async function assignPartToAsset(partId: string, assetId: string) {
     }
 
     await ensurePermission("EDIT", "PART");
+    await ensureAssetAccess(assetId);
 
     await prisma.assetPartCompatibility.create({
         data: {
@@ -294,6 +295,7 @@ export async function unassignPartFromAsset(partId: string, assetId: string) {
     }
 
     await ensurePermission("EDIT", "PART");
+    await ensureAssetAccess(assetId);
 
     await prisma.assetPartCompatibility.delete({
         where: {

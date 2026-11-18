@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { refreshPredictions } from "./schedules";
+import { refreshPredictions } from "@/lib/predictionRefresh";
 import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
 

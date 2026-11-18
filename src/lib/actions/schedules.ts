@@ -61,6 +61,8 @@ export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSc
 
     await ensurePermission("EDIT", "SERVICE");
     await ensureAssetAccess(data.assetId);
+    const existingSchedule = await prisma.serviceSchedule.findUnique({ where: { id }, select: { assetId: true } });
+    if (!existingSchedule || existingSchedule.assetId !== data.assetId) throw new Error("Schedule not found");
 
     const asset = await prisma.asset.findUnique({
         where: { id: data.assetId },
@@ -102,37 +104,13 @@ export async function getSchedules(assetId: string) {
     });
 }
 
-export async function refreshPredictions(assetId: string) {
-    const asset = await prisma.asset.findUnique({
-        where: { id: assetId },
-        include: {
-            fuelRecords: true,
-            schedules: true
-        }
-    });
-
-    if (!asset) return;
-    asset.currentUsage = getDynamicAssetUsage(asset);
-
-    const dailyUsage = calculateDailyUsage(asset.fuelRecords);
-
-    for (const schedule of asset.schedules) {
-        const nextDueDate = predictNextDueDate(schedule, asset.currentUsage, dailyUsage);
-
-        await prisma.serviceSchedule.update({
-            where: { id: schedule.id },
-            data: { nextDueDate },
-        });
-    }
-
-    revalidatePath(`/dashboard/asset/${assetId}`);
-}
 
 export async function deleteSchedule(id: string, assetId: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("DELETE", "SERVICE");
+    await ensureScheduleAccess(id, assetId);
 
     await prisma.serviceSchedule.delete({
         where: { id },
@@ -146,6 +124,7 @@ export async function dismissReminder(id: string, assetId: string) {
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("EDIT", "SERVICE");
+    await ensureScheduleAccess(id, assetId);
 
     await (prisma.serviceSchedule as any).update({
         where: { id },
@@ -153,4 +132,10 @@ export async function dismissReminder(id: string, assetId: string) {
     });
 
     revalidatePath(`/dashboard/asset/${assetId}`);
+}
+
+async function ensureScheduleAccess(id: string, assetId: string) {
+    const schedule = await prisma.serviceSchedule.findUnique({ where: { id }, select: { assetId: true } });
+    if (!schedule || schedule.assetId !== assetId) throw new Error("Schedule not found");
+    await ensureAssetAccess(schedule.assetId);
 }

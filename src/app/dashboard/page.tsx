@@ -3,9 +3,11 @@ import { AssetCard } from "@/components/assets/AssetCard";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { auth } from "@/auth";
 import { getSystemSetting } from "@/lib/actions/settings";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
     const session = await auth();
+    if (!session?.user) redirect("/login");
     const assets = await getAssets();
     const reminderSettings = await getSystemSetting("reminder_schedule");
     const maxDaysToEstimate = reminderSettings?.maxDaysToEstimate ?? 30;

@@ -107,9 +107,22 @@ export async function getPartPurchases(partId: string) {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    // Return line items for this specific part
+    const userId = session.user.id;
+    const isAdmin = (session.user as any).role === "ADMIN";
+
+    // Return line items for this specific part, limited to purchases the user made
+    // or that belong to an inventory system they own or have access to
     return await prisma.partPurchaseItem.findMany({
-        where: { partId },
+        where: isAdmin ? { partId } : {
+            partId,
+            partPurchase: {
+                OR: [
+                    { userId },
+                    { inventorySystem: { userId } },
+                    { inventorySystem: { sharedWith: { some: { userId } } } },
+                ],
+            },
+        },
         include: {
             partPurchase: {
                 include: {
