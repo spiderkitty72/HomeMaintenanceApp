@@ -1,8 +1,17 @@
 "use server";
 
 import { getSmtpTransport } from "../email";
+import { auth } from "@/auth";
+
+async function ensureAdmin() {
+    const session = await auth();
+    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+}
 
 export async function testSmtpConnection(testEmailAddress: string) {
+    await ensureAdmin();
     try {
         const { transporter, smtpSettings } = await getSmtpTransport();
 
@@ -33,5 +42,6 @@ export async function testSmtpConnection(testEmailAddress: string) {
 import { processServiceReminders } from "../reminders";
 
 export async function triggerManualReminders() {
+    await ensureAdmin();
     return await processServiceReminders();
 }
