@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshPredictions } from "./schedules";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
 import { addDays } from "date-fns";
 
@@ -34,6 +34,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("CREATE", "SERVICE");
+    await ensureAssetAccess(data.assetId);
 
     const result = await prisma.$transaction(async (tx) => {
         const serviceRecord = await tx.serviceRecord.create({
@@ -135,7 +136,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
 
 export async function getServiceRecords(assetId: string) {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !(await canAccessAsset(assetId))) {
         return [];
     }
 
@@ -159,7 +160,7 @@ export async function getServiceRecord(id: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await prisma.serviceRecord.findUnique({
+    const record = await prisma.serviceRecord.findUnique({
         where: { id },
         include: {
             asset: {
@@ -177,6 +178,9 @@ export async function getServiceRecord(id: string) {
             attachments: true,
         },
     });
+
+    if (!record || !(await canAccessAsset(record.assetId))) return null;
+    return record;
 }
 
 export async function getAllServiceRecordsSystem() {

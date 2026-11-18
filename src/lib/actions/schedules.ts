@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { calculateDailyUsage, predictNextDueDate } from "@/lib/predictions";
-import { ensurePermission } from "@/lib/permissions";
+import { ensurePermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { getDynamicAssetUsage } from "@/lib/utils";
 
 const ScheduleSchema = z.object({
@@ -23,6 +23,7 @@ export async function createSchedule(data: z.infer<typeof ScheduleSchema>) {
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("CREATE", "SERVICE");
+    await ensureAssetAccess(data.assetId);
 
     const asset = await prisma.asset.findUnique({
         where: { id: data.assetId },
@@ -59,6 +60,7 @@ export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSc
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("EDIT", "SERVICE");
+    await ensureAssetAccess(data.assetId);
 
     const asset = await prisma.asset.findUnique({
         where: { id: data.assetId },
@@ -91,6 +93,7 @@ export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSc
 }
 
 export async function getSchedules(assetId: string) {
+    if (!(await canAccessAsset(assetId))) return [];
     return await prisma.serviceSchedule.findMany({
         where: { assetId },
         orderBy: {

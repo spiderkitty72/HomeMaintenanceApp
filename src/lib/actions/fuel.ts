@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshPredictions } from "./schedules";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
 
 const FuelRecordSchema = z.object({
@@ -29,6 +29,7 @@ export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
     }
 
     await ensurePermission("CREATE", "FUEL");
+    await ensureAssetAccess(data.assetId);
 
     const result = await prisma.$transaction(async (tx) => {
         const fuelRecord = await tx.fuelRecord.create({
@@ -73,7 +74,7 @@ export async function createFuelRecord(data: z.infer<typeof FuelRecordSchema>) {
 
 export async function getFuelRecords(assetId: string) {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !(await canAccessAsset(assetId))) {
         return [];
     }
 
@@ -89,7 +90,7 @@ export async function getFuelRecords(assetId: string) {
 
 export async function getFuelStats(assetId: string) {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !(await canAccessAsset(assetId))) {
         return null;
     }
 
@@ -141,13 +142,16 @@ export async function getFuelRecord(id: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await prisma.fuelRecord.findUnique({
+    const record = await prisma.fuelRecord.findUnique({
         where: { id },
         include: {
             asset: true,
             attachments: true,
         },
     });
+
+    if (!record || !(await canAccessAsset(record.assetId))) return null;
+    return record;
 }
 
 export async function getAllFuelRecordsSystem() {

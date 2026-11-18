@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { canAccessAsset } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getServiceRecords } from "@/lib/actions/service";
 import { ServiceList } from "@/components/service/ServiceList";
@@ -50,7 +51,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         },
     });
 
-    if (!asset) {
+    if (!asset || !(await canAccessAsset(asset.id))) {
         notFound();
     }
 

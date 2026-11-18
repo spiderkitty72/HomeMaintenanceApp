@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission, canAccessAsset } from "@/lib/permissions";
 
 const PartSchema = z.object({
     name: z.string().min(2, "Name is required"),
@@ -310,7 +310,7 @@ export async function unassignPartFromAsset(partId: string, assetId: string) {
 
 export async function getCompatibleParts(assetId: string) {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !(await canAccessAsset(assetId))) {
         return [];
     }
 
