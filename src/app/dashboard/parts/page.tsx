@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getParts } from "@/lib/actions/parts";
 import { getAssets } from "@/lib/actions/assets";
+import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { PartsList } from "@/components/parts/PartsList";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
 import { AddPurchaseDialog } from "@/components/parts/AddPurchaseDialog";
@@ -18,9 +19,10 @@ export default async function PartsPage() {
     const session = await auth();
     if (!session) redirect("/api/auth/signin");
 
-    const [parts, assets] = await Promise.all([
+    const [parts, assets, inventorySystems] = await Promise.all([
         getParts(),
-        getAssets()
+        getAssets(),
+        getInventorySystems(),
     ]);
 
     return (
@@ -33,7 +35,7 @@ export default async function PartsPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <AddPurchaseDialog parts={parts} assets={assets} />
+                    <AddPurchaseDialog parts={parts} assets={assets} inventorySystems={inventorySystems} />
                     <AddPartDialog assets={assets} />
                 </div>
             </div>
@@ -49,7 +51,7 @@ export default async function PartsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <PartsList parts={parts} assets={assets} />
+                    <PartsList parts={parts} assets={assets} inventorySystems={inventorySystems} />
                 </CardContent>
             </Card>
         </div>

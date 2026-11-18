@@ -14,8 +14,8 @@ const PartSchema = z.object({
     assetIds: z.array(z.string()).optional(),
     defaultCost: z.coerce.number().min(0).default(0),
     unitOfMeasure: z.string().min(1, "Unit of measure is required").default("pcs"),
-    quantityOnHand: z.coerce.number().default(0),
     image: z.string().optional(),
+    quantityOnHand: z.coerce.number().optional().default(0),
 });
 
 export async function createPart(data: z.infer<typeof PartSchema>) {
@@ -26,7 +26,7 @@ export async function createPart(data: z.infer<typeof PartSchema>) {
 
     await ensurePermission("CREATE", "PART");
 
-    const { assetIds, ...partData } = data;
+    const { assetIds, quantityOnHand, ...partData } = data;
 
     const part = await prisma.part.create({
         data: {
@@ -38,6 +38,29 @@ export async function createPart(data: z.infer<typeof PartSchema>) {
                 })) || []
             }
         },
+    });
+
+    // Find or create default inventory system for the user
+    let defaultSystem = await prisma.inventorySystem.findFirst({
+        where: { userId: session.user.id }
+    });
+
+    if (!defaultSystem) {
+        defaultSystem = await prisma.inventorySystem.create({
+            data: {
+                name: "Default Inventory",
+                userId: session.user.id
+            }
+        });
+    }
+
+    // Create the InventoryItem record
+    await prisma.inventoryItem.create({
+        data: {
+            inventorySystemId: defaultSystem.id,
+            partId: part.id,
+            quantityOnHand: quantityOnHand || 0
+        }
     });
 
     revalidatePath("/dashboard", "layout");
@@ -85,6 +108,11 @@ export async function getParts() {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                include: {
+                    inventorySystem: true
+                }
+            }
         },
         orderBy: {
             name: "asc",
@@ -98,7 +126,7 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>) {
         throw new Error("Unauthorized");
     }
 
-    const { assetIds, ...partData } = data;
+    const { assetIds, quantityOnHand, ...partData } = data;
 
     const existing = await prisma.part.findUnique({
         where: { id },
@@ -171,6 +199,15 @@ export async function getAllPartsSystem() {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                include: {
+                    inventorySystem: {
+                        include: {
+                            user: true
+                        }
+                    }
+                }
+            }
         },
         orderBy: {
             name: "asc",
@@ -288,6 +325,11 @@ export async function getCompatibleParts(assetId: string) {
                     asset: true,
                 },
             },
+            inventoryItems: {
+                include: {
+                    inventorySystem: true
+                }
+            }
         },
         orderBy: {
             name: "asc",

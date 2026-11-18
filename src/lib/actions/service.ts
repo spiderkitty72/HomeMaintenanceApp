@@ -18,10 +18,12 @@ const ServiceRecordSchema = z.object({
     totalCost: z.number(),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    imageName: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
         costPerUnit: z.number(),
+        inventorySystemId: z.string().optional(),
     })),
     fulfilledScheduleIds: z.array(z.string()).optional(),
 });
@@ -47,16 +49,20 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
                         partId: p.partId,
                         quantity: p.quantity,
                         costPerUnit: p.costPerUnit,
+                        inventorySystemId: p.inventorySystemId || null,
                     })),
                 },
             },
         });
 
         if (data.image) {
+            const ext = data.image.split(".").pop()?.toLowerCase();
+            const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
             await tx.attachment.create({
                 data: {
                     url: data.image,
-                    fileType: "IMAGE",
+                    name: data.imageName || "Receipt",
+                    fileType: isImage ? "IMAGE" : "DOCUMENT",
                     serviceRecordId: serviceRecord.id,
                 },
             });
@@ -65,16 +71,28 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
         // Update asset current usage
         await recalculateAssetUsage(tx as any, data.assetId);
 
-        // Deduct from inventory
+        // Deduct from inventory per-part
         for (const p of data.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        decrement: p.quantity,
+            if (p.inventorySystemId) {
+                await tx.inventoryItem.upsert({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: p.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    update: {
+                        quantityOnHand: {
+                            decrement: p.quantity,
+                        },
+                    },
+                    create: {
+                        inventorySystemId: p.inventorySystemId,
+                        partId: p.partId,
+                        quantityOnHand: -p.quantity,
+                    }
+                });
+            }
         }
 
         // Fulfill explicitly chosen schedules
@@ -152,6 +170,7 @@ export async function getServiceRecord(id: string) {
             parts: {
                 include: {
                     part: true,
+                    inventorySystem: true,
                 },
             },
             attachments: true,
@@ -218,19 +237,18 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         throw new Error("Unauthorized to update this record");
     }
 
-    const { image, parts, fulfilledScheduleIds, ...serviceData } = data;
+    const { image, imageName, parts, fulfilledScheduleIds, ...serviceData } = data;
 
     const result = await prisma.$transaction(async (tx) => {
-        // 1. Revert current inventory changes
+        // 1. Revert current inventory changes per-part (fallback to record-level for old records)
         for (const p of existing.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        increment: p.quantity,
-                    },
-                },
-            });
+            const sysId = p.inventorySystemId ?? existing.inventorySystemId;
+            if (sysId) {
+                await tx.inventoryItem.updateMany({
+                    where: { inventorySystemId: sysId, partId: p.partId },
+                    data: { quantityOnHand: { increment: p.quantity } },
+                });
+            }
         }
 
         // 2. Clear old parts links
@@ -249,21 +267,34 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                         partId: p.partId,
                         quantity: p.quantity,
                         costPerUnit: p.costPerUnit,
+                        inventorySystemId: p.inventorySystemId || null,
                     })),
                 },
             },
         });
 
-        // 4. Apply new inventory changes
+        // 4. Apply new inventory changes per-part
         for (const p of parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        decrement: p.quantity,
+            if (p.inventorySystemId) {
+                await tx.inventoryItem.upsert({
+                    where: {
+                        inventorySystemId_partId: {
+                            inventorySystemId: p.inventorySystemId,
+                            partId: p.partId,
+                        }
                     },
-                },
-            });
+                    update: {
+                        quantityOnHand: {
+                            decrement: p.quantity,
+                        },
+                    },
+                    create: {
+                        inventorySystemId: p.inventorySystemId,
+                        partId: p.partId,
+                        quantityOnHand: -p.quantity,
+                    }
+                });
+            }
         }
 
         if (image !== undefined) {
@@ -271,10 +302,13 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
                 where: { serviceRecordId: id },
             });
             if (image) {
+                const ext = image.split(".").pop()?.toLowerCase();
+                const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
                 await tx.attachment.create({
                     data: {
                         url: image,
-                        fileType: "IMAGE",
+                        name: imageName || "Receipt",
+                        fileType: isImage ? "IMAGE" : "DOCUMENT",
                         serviceRecordId: id,
                     },
                 });
@@ -347,16 +381,15 @@ export async function deleteServiceRecord(id: string) {
     }
 
     await prisma.$transaction(async (tx) => {
-        // Revert inventory changes
+        // Revert inventory changes per-part (fallback to record-level for old records)
         for (const p of existing.parts) {
-            await tx.part.update({
-                where: { id: p.partId },
-                data: {
-                    quantityOnHand: {
-                        increment: p.quantity,
-                    },
-                },
-            });
+            const sysId = p.inventorySystemId ?? existing.inventorySystemId;
+            if (sysId) {
+                await tx.inventoryItem.updateMany({
+                    where: { inventorySystemId: sysId, partId: p.partId },
+                    data: { quantityOnHand: { increment: p.quantity } },
+                });
+            }
         }
 
         // Delete the record (cascade will handle servicePart and attachments)

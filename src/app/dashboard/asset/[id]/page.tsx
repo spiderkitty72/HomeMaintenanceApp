@@ -18,10 +18,11 @@ import { ScheduleList } from "@/components/schedules/ScheduleList";
 import { AddScheduleDialog } from "@/components/schedules/AddScheduleDialog";
 import { isBefore } from "date-fns";
 import { getCompatibleParts } from "@/lib/actions/parts";
-import { Package, ListChecks } from "lucide-react";
+import { Package, ListChecks, FileText } from "lucide-react";
 import { getAssetSpecs } from "@/lib/actions/specs";
 import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
+import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { getAssets } from "@/lib/actions/assets";
 import { formatHouseUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
@@ -60,7 +61,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         schedules,
         compatibleParts,
         specs,
-        allAssets
+        allAssets,
+        inventorySystems
     ] = await Promise.all([
         getServiceRecords(id),
         getFuelRecords(id),
@@ -68,7 +70,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         getSchedules(id),
         getCompatibleParts(id),
         getAssetSpecs(id),
-        getAssets()
+        getAssets(),
+        getInventorySystems()
     ]);
 
     // Find the most urgent reminder
@@ -102,7 +105,13 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         lastUsage={asset.currentUsage}
                         avgMpg={fuelStats?.avgMpg}
                     />
-                    <AddServiceDialog assetId={asset.id} trackingMethod={asset.trackingMethod} assetType={asset.type} schedules={schedules} />
+                    <AddServiceDialog 
+                        assetId={asset.id} 
+                        trackingMethod={asset.trackingMethod} 
+                        assetType={asset.type} 
+                        schedules={schedules} 
+                        inventorySystems={inventorySystems}
+                    />
                     <AddAssetDialog 
                         asset={asset as any} 
                         trigger={
@@ -186,6 +195,17 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                                 ${fuelStats.avgCostPerGal.toFixed(3)}/gal
                                             </div>
                                         </div>
+                                        {asset.trackingMethod === "Mileage" && fuelStats.avgMpg > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center text-sm text-muted-foreground">
+                                                    <TrendingUp className="h-4 w-4 mr-2" />
+                                                    Cost / Mile
+                                                </div>
+                                                <div className="font-medium">
+                                                    ${(fuelStats.avgCostPerGal / fuelStats.avgMpg).toFixed(3)}/mi
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -220,21 +240,58 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Photos
+                                    Photos & Documents
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-0">
                                 <div className="grid grid-cols-2 gap-2">
-                                    {(asset as any).attachments.map((attachment: any) => (
-                                        <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md overflow-hidden border hover:opacity-80 transition-opacity block bg-muted">
-                                            <Image
-                                                src={attachment.url}
-                                                alt="Asset photo"
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </a>
-                                    ))}
+                                    {(asset as any).attachments.map((attachment: any) => {
+                                        const isImage = (url: string) => {
+                                            const ext = url.split('.').pop()?.toLowerCase();
+                                            return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext || '');
+                                        };
+                                        const getFileDisplayLabel = (url: string) => {
+                                            const fileName = url.split('/').pop() || '';
+                                            const ext = fileName.split('.').pop()?.toUpperCase() || '';
+                                            return ext ? `${ext} Document` : 'Document';
+                                        };
+                                        const isImg = isImage(attachment.url);
+
+                                        if (isImg) {
+                                            return (
+                                                <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md overflow-hidden border hover:opacity-80 transition-opacity block bg-muted">
+                                                    <Image
+                                                        src={attachment.url}
+                                                        alt={attachment.name || "Asset photo"}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                    {attachment.name && (
+                                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 z-10">
+                                                            <p className="text-[10px] font-medium text-white truncate text-center">
+                                                                {attachment.name}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </a>
+                                            );
+                                        }
+
+                                        return (
+                                            <a href={attachment.url} target="_blank" rel="noopener noreferrer" key={attachment.id} className="relative aspect-square rounded-md border hover:opacity-85 transition-all flex flex-col items-center justify-center p-3 bg-muted hover:bg-muted/70 text-center">
+                                                <FileText className="h-8 w-8 text-primary mb-1.5" />
+                                                <span className="text-[11px] font-semibold text-foreground truncate w-full px-1">
+                                                    {attachment.name || getFileDisplayLabel(attachment.url)}
+                                                </span>
+                                                {attachment.name && (
+                                                    <span className="text-[9px] text-muted-foreground mt-0.5">
+                                                        {attachment.url.split('.').pop()?.toUpperCase()} Document
+                                                    </span>
+                                                )}
+                                                <span className="text-[9px] text-muted-foreground mt-1">Click to view</span>
+                                            </a>
+                                        );
+                                    })}
                                 </div>
                             </CardContent>
                         </Card>
@@ -279,7 +336,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                             <SpecList assetId={asset.id} specs={specs} />
                         </TabsContent>
                         <TabsContent value="parts">
-                            <AssetPartsList parts={compatibleParts} assets={allAssets} assetId={asset.id} />
+                            <AssetPartsList parts={compatibleParts} assets={allAssets} assetId={asset.id} inventorySystems={inventorySystems} />
                         </TabsContent>
                     </Tabs>
                 </div>

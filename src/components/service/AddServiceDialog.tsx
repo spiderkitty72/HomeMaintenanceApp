@@ -26,10 +26,12 @@ const serviceSchema = z.object({
     totalCost: z.coerce.number().min(0),
     vendor: z.string().optional(),
     image: z.string().optional(),
+    imageName: z.string().optional(),
     parts: z.array(z.object({
         partId: z.string().min(1, "Part is required"),
         quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0"),
         costPerUnit: z.coerce.number().min(0),
+        inventorySystemId: z.string().optional(),
     })),
     fulfilledScheduleIds: z.array(z.string()).optional(),
 });
@@ -43,12 +45,18 @@ interface AddServiceDialogProps {
     trigger?: React.ReactNode;
     serviceRecord?: any; // Existing record for editing
     schedules?: any[]; // For explicitly fulfilling reminders
+    inventorySystems?: any[];
 }
 
-export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules }: AddServiceDialogProps) {
+export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, serviceRecord, schedules, inventorySystems = [] }: AddServiceDialogProps) {
     const [open, setOpen] = useState(false);
     const [availableParts, setAvailableParts] = useState<{ id: string; name: string; defaultCost: number; partNumber?: string | null }[]>([]);
     const isEditing = !!serviceRecord;
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const form = useForm<ServiceFormValues>({
         resolver: zodResolver(serviceSchema) as any,
@@ -63,8 +71,10 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 partId: p.partId,
                 quantity: p.quantity,
                 costPerUnit: p.costPerUnit,
+                inventorySystemId: p.inventorySystemId ?? "",
             })) || [],
             image: serviceRecord?.attachments?.[0]?.url ?? "",
+            imageName: serviceRecord?.attachments?.[0]?.name ?? "",
             fulfilledScheduleIds: [],
         },
     });
@@ -97,6 +107,10 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                 assetId,
                 date: new Date(values.date),
                 fulfilledScheduleIds: values.fulfilledScheduleIds || [],
+                parts: values.parts.map(p => ({
+                    ...p,
+                    inventorySystemId: p.inventorySystemId || undefined,
+                })),
             };
 
             if (isEditing && serviceRecord) {
@@ -109,18 +123,28 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
             setOpen(false);
             if (!isEditing) form.reset();
         } catch (error) {
+            console.error("Service record error:", error);
             toast.error(`Failed to ${isEditing ? "update" : "save"} service record`);
         }
     }
 
     const addPart = () => {
         const currentParts = form.getValues("parts");
-        form.setValue("parts", [...currentParts, { partId: "", quantity: 1, costPerUnit: 0 }]);
+        form.setValue("parts", [...currentParts, { partId: "", quantity: 1, costPerUnit: 0, inventorySystemId: "" }]);
     };
 
     const removePart = (index: number) => {
         const currentParts = form.getValues("parts");
         form.setValue("parts", currentParts.filter((_, i) => i !== index));
+    };
+
+    const getPartsForSystem = (sysId: string | undefined) => {
+        if (!sysId) return availableParts;
+        const system = inventorySystems.find((s: any) => s.id === sysId);
+        if (!system?.items?.length) return availableParts;
+        return system.items
+            .map((item: any) => item.part)
+            .filter(Boolean) as typeof availableParts;
     };
 
     const dateStr = form.watch("date");
@@ -131,6 +155,17 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
         const { isDue, reason } = isScheduleDue(schedule, new Date(dateStr || new Date()), Number(usageStr || 0));
         return { ...schedule, isDue, reason };
     }).sort((a: any, b: any) => (a.isDue === b.isDue ? 0 : a.isDue ? -1 : 1)) || [];
+
+    if (!mounted) {
+        return trigger || (
+            <Button variant={isEditing ? "outline" : "default"} size="sm" className="gap-2">
+                {isEditing ? <Edit2 className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
+                <span className={isEditing ? "" : "hidden sm:inline text-xs font-semibold"}>
+                    {isEditing ? "Edit" : "Add Service"}
+                </span>
+            </Button>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -279,80 +314,122 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <FormLabel>Parts Used</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={addPart}>
+                                <Button type="button" variant="outline" size="sm" onClick={addPart} className="h-8 text-xs">
                                     <Plus className="h-3 w-3 mr-1" /> Add Part
                                 </Button>
                             </div>
                             <div className="space-y-3">
-                                {form.watch("parts").map((_, index) => (
-                                    <div key={index} className="flex gap-3 items-end border p-3 rounded-md bg-muted/30">
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.partId`}
-                                            render={({ field }) => (
-                                                <FormItem className="flex-1">
-                                                    <Select
-                                                        onValueChange={(value) => {
-                                                            field.onChange(value);
-                                                            const selectedPart = availableParts.find(p => p.id === value);
-                                                            if (selectedPart) {
-                                                                form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
-                                                            }
-                                                        }}
-                                                        defaultValue={field.value}
-                                                    >
+                                {form.watch("parts").map((part, index) => {
+                                    const partsForRow = getPartsForSystem(part.inventorySystemId || undefined);
+                                    return (
+                                    <div key={index} className="border p-3 rounded-md bg-muted/30 space-y-2">
+                                        <div className="flex gap-3 items-end">
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.partId`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-1">
+                                                        <Select
+                                                            onValueChange={(value) => {
+                                                                field.onChange(value);
+                                                                const selectedPart = availableParts.find(p => p.id === value);
+                                                                if (selectedPart) {
+                                                                    form.setValue(`parts.${index}.costPerUnit`, selectedPart.defaultCost);
+                                                                }
+                                                            }}
+                                                            value={field.value}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select a part" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {partsForRow.map((p) => (
+                                                                    <SelectItem key={p.id} value={p.id}>
+                                                                        {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.quantity`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-20">
                                                         <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select a part" />
-                                                            </SelectTrigger>
+                                                            <Input type="number" step="any" placeholder="Qty" {...field} />
                                                         </FormControl>
-                                                        <SelectContent>
-                                                            {availableParts.map((p) => (
-                                                                <SelectItem key={p.id} value={p.id}>
-                                                                    {p.name} {p.partNumber ? `(${p.partNumber})` : ""}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.quantity`}
-                                            render={({ field }) => (
-                                                <FormItem className="w-20">
-                                                    <FormControl>
-                                                        <Input type="number" step="any" placeholder="Qty" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`parts.${index}.costPerUnit`}
-                                            render={({ field }) => (
-                                                <FormItem className="w-24">
-                                                    <FormControl>
-                                                        <Input type="number" step="0.01" placeholder="Cost" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-destructive h-10 w-10"
-                                            onClick={() => removePart(index)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.costPerUnit`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-24">
+                                                        <FormControl>
+                                                            <Input type="number" step="0.01" placeholder="Cost" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-destructive h-10 w-10"
+                                                onClick={() => removePart(index)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        {inventorySystems.length > 0 && (
+                                            <FormField
+                                                control={form.control}
+                                                name={`parts.${index}.inventorySystemId`}
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-0">
+                                                        <Select
+                                                            onValueChange={(val) => {
+                                                                const newSysId = val === "__none__" ? "" : val;
+                                                                field.onChange(newSysId);
+                                                                if (newSysId) {
+                                                                    const currentPartId = form.getValues(`parts.${index}.partId`);
+                                                                    const partsInNewSystem = getPartsForSystem(newSysId);
+                                                                    if (currentPartId && !partsInNewSystem.find(p => p.id === currentPartId)) {
+                                                                        form.setValue(`parts.${index}.partId`, "");
+                                                                        form.setValue(`parts.${index}.costPerUnit`, 0);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            value={field.value || "__none__"}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger className="h-7 text-xs bg-background">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="__none__">No inventory deduction</SelectItem>
+                                                                {inventorySystems.map((s) => (
+                                                                    <SelectItem key={s.id} value={s.id}>Deduct from: {s.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                                 {form.watch("parts").length === 0 && (
                                     <p className="text-xs text-center text-muted-foreground py-2 italic border border-dashed rounded-md">
                                         No parts logged with this service.
@@ -371,12 +448,29 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
                                         <ImageUpload
                                             onUpload={field.onChange}
                                             value={field.value}
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                                         />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+
+                        {form.watch("image") && (
+                            <FormField
+                                control={form.control}
+                                name="imageName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Receipt Name / Description</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. Invoice, Receipt Copy, Warranty Copy" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         <FormField
                             control={form.control}

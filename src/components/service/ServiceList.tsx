@@ -1,8 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
 import { Paperclip, Wrench, ChevronRight, Calculator, Calendar } from "lucide-react";
 import Link from "next/link";
-import { formatHouseUsage } from "@/lib/utils";
+import { formatHouseUsage, formatUtcDate } from "@/lib/utils";
 
 interface ServiceRecordWithParts {
     id: string;
@@ -57,7 +56,7 @@ export function ServiceList({ records, trackingMethod, assetType }: ServiceListP
                             <div className="flex justify-between items-center text-sm">
                                 <div className="flex items-center text-muted-foreground">
                                     <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                                    {format(new Date(record.date), "MMM d, yyyy")}
+                                    {formatUtcDate(record.date)}
                                 </div>
                                 <div className="flex items-center font-medium">
                                     <Calculator className="h-3.5 w-3.5 mr-1.5 text-primary" />
@@ -100,7 +99,7 @@ export function ServiceList({ records, trackingMethod, assetType }: ServiceListP
                         {records.map((record) => (
                             <TableRow key={record.id}>
                                 <TableCell className="font-medium">
-                                    {format(new Date(record.date), "MMM d, yyyy")}
+                                    {formatUtcDate(record.date)}
                                 </TableCell>
                                 <TableCell>
                                     {isHouse ? formatHouseUsage(record.usageAtService) : record.usageAtService.toLocaleString()} {usageUnit}

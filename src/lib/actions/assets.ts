@@ -15,7 +15,10 @@ const AssetSchema = z.object({
     details: z.string().optional(), // JSON string
     image: z.string().optional(),
     sharedUserIds: z.array(z.string()).optional(),
-    attachments: z.array(z.string()).optional(),
+    attachments: z.array(z.object({
+        url: z.string(),
+        name: z.string().optional(),
+    })).optional(),
 });
 
 export async function createAsset(data: z.infer<typeof AssetSchema>) {
@@ -52,10 +55,15 @@ export async function createAsset(data: z.infer<typeof AssetSchema>) {
                     })) || [],
                 },
                 attachments: attachments?.length > 0 ? {
-                    create: attachments.map((url: string) => ({
-                        url,
-                        fileType: "image"
-                    }))
+                    create: attachments.map((att: { url: string; name?: string }) => {
+                        const ext = att.url.split(".").pop()?.toLowerCase();
+                        const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+                        return {
+                            url: att.url,
+                            name: att.name || null,
+                            fileType: isImage ? "image" : "document"
+                        };
+                    })
                 } : undefined,
             },
         });
@@ -270,11 +278,16 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
                 // Create new attachments
                 if (attachments.length > 0) {
                     await tx.attachment.createMany({
-                        data: attachments.map((url: string) => ({
-                            assetId: id,
-                            url,
-                            fileType: "image",
-                        })),
+                        data: attachments.map((att: { url: string; name?: string }) => {
+                            const ext = att.url.split(".").pop()?.toLowerCase();
+                            const isImage = ["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(ext || "");
+                            return {
+                                assetId: id,
+                                url: att.url,
+                                name: att.name || null,
+                                fileType: isImage ? "image" : "document",
+                            };
+                        }),
                     });
                 }
             }

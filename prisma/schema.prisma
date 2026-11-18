@@ -57,6 +57,10 @@ model User {
   groups        GroupMember[]
   partPurchases PartPurchase[]
   assetSpecTypes AssetSpecType[]
+  inventorySystems InventorySystem[]
+  inventorySystemAccess InventorySystemAccess[]
+  invoicesSent     Invoice[] @relation("InvoicesFrom")
+  invoicesReceived Invoice[] @relation("InvoicesTo")
 }
 
 model VerificationToken {
@@ -175,7 +179,6 @@ model Part {
   compatibleType String? // e.g. "Car"
   defaultCost    Float   @default(0)
   unitOfMeasure  String  @default("pcs") // pcs, quarts, pkg, etc
-  quantityOnHand Float   @default(0)
   isActive       Boolean @default(true)
   image          String?
   
@@ -183,6 +186,8 @@ model Part {
   serviceParts   ServicePart[]
   purchases      PartPurchaseItem[]
   compatibilities AssetPartCompatibility[]
+  inventoryItems InventoryItem[]
+  invoiceLineItems InvoiceLineItem[]
 }
 
 model PartPurchase {
@@ -191,8 +196,10 @@ model PartPurchase {
   userId      String
   vendor      String?
   totalCost   Float    @default(0)
+  inventorySystemId String?
   
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
   items       PartPurchaseItem[]
   attachments Attachment[]
 }
@@ -228,10 +235,13 @@ model ServiceRecord {
   notes          String?
   totalCost      Float    @default(0)
   vendor         String?
+  inventorySystemId String?
   
   asset          Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
   parts          ServicePart[]
   attachments    Attachment[]
+  invoices       Invoice[]
 }
 
 model ServicePart {
@@ -240,9 +250,11 @@ model ServicePart {
   partId          String
   quantity        Float
   costPerUnit     Float
-  
+  inventorySystemId String?
+
   serviceRecord   ServiceRecord @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
   part            Part          @relation(fields: [partId], references: [id])
+  inventorySystem InventorySystem? @relation(fields: [inventorySystemId], references: [id], onDelete: SetNull)
 }
 
 model FuelRecord {
@@ -281,6 +293,7 @@ model Attachment {
   id             String   @id @default(cuid())
   url            String
   fileType       String
+  name           String?
   
   // Polymorphic-like associations (optional relations)
   serviceRecordId String?
@@ -299,4 +312,75 @@ model SystemSetting {
   key       String   @unique
   value     String   // JSON string
   updatedAt DateTime @updatedAt
+}
+
+model InventorySystem {
+  id          String   @id @default(cuid())
+  name        String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       InventoryItem[]
+  serviceRecords ServiceRecord[]
+  serviceParts   ServicePart[]
+  partPurchases  PartPurchase[]
+  sharedWith  InventorySystemAccess[]
+  invoices    Invoice[]
+}
+
+model InventoryItem {
+  id                String  @id @default(cuid())
+  inventorySystemId String
+  partId            String
+  quantityOnHand    Float   @default(0)
+
+  inventorySystem   InventorySystem @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  part              Part            @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([inventorySystemId, partId])
+}
+
+model InventorySystemAccess {
+  id                String          @id @default(cuid())
+  inventorySystemId String
+  userId            String
+  permission        String          // VIEW, MANAGE
+
+  inventorySystem   InventorySystem @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([inventorySystemId, userId])
+}
+
+model Invoice {
+  id                String           @id @default(cuid())
+  invoiceNumber     String           @unique
+  fromUserId        String
+  toUserId          String
+  serviceRecordId   String
+  inventorySystemId String
+  status            String           @default("UNPAID")
+  notes             String?
+  issuedAt          DateTime         @default(now())
+  paidAt            DateTime?
+
+  fromUser          User             @relation("InvoicesFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser            User             @relation("InvoicesTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  serviceRecord     ServiceRecord    @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  inventorySystem   InventorySystem  @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
+  lineItems         InvoiceLineItem[]
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  partId      String?
+  partName    String
+  quantity    Float
+  unitCost    Float
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  part        Part?    @relation(fields: [partId], references: [id], onDelete: SetNull)
 }

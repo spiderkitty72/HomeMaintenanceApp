@@ -189,7 +189,7 @@ export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, 
                                 </FormItem>
                             )}
                         />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className={mode === "add" ? "grid grid-cols-2 gap-4" : ""}>
                             <FormField
                                 control={form.control}
                                 name="unitOfMeasure"
@@ -203,19 +203,21 @@ export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, 
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="quantityOnHand"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Quantity on Hand</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="any" placeholder="0" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {mode === "add" && (
+                                <FormField
+                                    control={form.control}
+                                    name="quantityOnHand"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Quantity on Hand</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" step="any" placeholder="0" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
                         </div>
                         <FormField
                             control={form.control}
