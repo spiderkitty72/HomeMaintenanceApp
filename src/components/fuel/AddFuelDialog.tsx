@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/common/ImageUpload";
-import { Fuel, Plus, AlertTriangle } from "lucide-react";
+import { Fuel, AlertTriangle } from "lucide-react";
 import { createFuelRecord, updateFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -183,7 +183,7 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
             }
             setOpen(false);
             if (!isEditing) form.reset();
-        } catch (error) {
+        } catch {
             toast.error(`Failed to ${isEditing ? "update" : "add"} fuel record`);
         }
     }

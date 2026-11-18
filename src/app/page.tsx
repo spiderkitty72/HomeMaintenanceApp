@@ -48,7 +48,7 @@ export default async function LandingPage() {
             Maintenance<span className="text-primary">App</span>
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed mb-10">
-            The central hub for tracking your life's assets.
+            The central hub for tracking your life&apos;s assets.
           </p>
 
           <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000">

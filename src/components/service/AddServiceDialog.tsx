@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Image as ImageIcon, Wrench, Bell, Edit2 } from "lucide-react";
+import { Plus, Trash2, Image as Wrench, Bell, Edit2 } from "lucide-react";
 import { createServiceRecord, updateServiceRecord } from "@/lib/actions/service";
 import { getCompatibleParts } from "@/lib/actions/parts";
 import { toast } from "sonner";
@@ -93,12 +93,11 @@ export function AddServiceDialog({ assetId, trackingMethod, assetType, trigger, 
     });
 
     useEffect(() => {
-        // @ts-ignore
         getCompatibleParts(assetId).then(setAvailableParts);
     }, [assetId]);
 
     useEffect(() => {
-        const subscription = form.watch((value, { name, type }) => {
+        const subscription = form.watch((value, { name }) => {
             if (name?.startsWith("parts") || name === "parts") {
                 const totalPartsCost = value.parts?.reduce((sum, p) => {
                     return sum + (Number(p?.quantity || 0) * Number(p?.costPerUnit || 0));

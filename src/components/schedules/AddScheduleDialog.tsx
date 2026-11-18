@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarClock, Plus, Edit2 } from "lucide-react";
+import { CalendarClock, Edit2 } from "lucide-react";
 import { createSchedule, updateSchedule } from "@/lib/actions/schedules";
 import { toast } from "sonner";
 import { formatUtcDate, todayInputValue } from "@/lib/utils";
@@ -89,7 +89,7 @@ export function AddScheduleDialog({ assetId, trackingMethod, currentUsage, sched
             
             setOpen(false);
             if (!schedule) form.reset();
-        } catch (error) {
+        } catch {
             toast.error(schedule ? "Failed to update reminder" : "Failed to create reminder");
         }
     }

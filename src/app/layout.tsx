@@ -63,7 +63,7 @@ export default async function RootLayout({
         const prefs = JSON.parse(user.preferences);
         if (prefs.themeLight) themeLight = prefs.themeLight;
         if (prefs.themeDark) themeDark = prefs.themeDark;
-      } catch (e) {}
+      } catch {}
     }
   }
 

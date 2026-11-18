@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import Credentials from "next-auth/providers/credentials"
-import type { NextAuthConfig } from "next-auth"
+import type { DefaultSession, NextAuthConfig } from "next-auth"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { clearLoginFailures, getClientIp, isLoginBlocked, recordLoginFailure } from "@/lib/loginRateLimit"
@@ -10,6 +10,13 @@ import { clearLoginFailures, getClientIp, isLoginBlocked, recordLoginFailure } f
 declare module "next-auth" {
     interface User {
         password?: string | null
+        role?: string
+    }
+    interface Session {
+        user: {
+            id: string
+            role?: string
+        } & DefaultSession["user"]
     }
 }
 
@@ -51,13 +58,13 @@ const authConfig = {
         async session({ session, token }) {
             if (token.sub && session.user) {
                 session.user.id = token.sub;
-                (session.user as any).role = token.role;
+                session.user.role = token.role as string | undefined;
             }
             return session;
         },
         async jwt({ token, user }) {
             if (user) {
-                token.role = (user as any).role;
+                token.role = user.role;
                 return token;
             }
             // On the Node.js server (pages and server actions), re-read the user so that a

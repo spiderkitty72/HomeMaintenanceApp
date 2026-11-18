@@ -185,7 +185,7 @@ export async function getServiceRecord(id: string) {
 
 export async function getAllServiceRecordsSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -234,7 +234,7 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
 
     if (!existing) throw new Error("Record not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.asset.userId === session.user?.id;
     const isShared = existing.asset.sharedWith.some(share => share.userId === session.user?.id);
     const hasPermission = await checkPermission("EDIT", "SERVICE");
@@ -377,7 +377,7 @@ export async function deleteServiceRecord(id: string) {
 
     if (!existing) throw new Error("Record not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.asset.userId === session.user?.id;
     const isShared = existing.asset.sharedWith.some(share => share.userId === session.user?.id);
     const hasPermission = await checkPermission("DELETE", "SERVICE");

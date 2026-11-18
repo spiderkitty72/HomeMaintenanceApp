@@ -12,7 +12,7 @@ const GroupSchema = z.object({
 
 export async function getGroups() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -34,7 +34,7 @@ export async function getGroups() {
 export async function createGroup(data: z.infer<typeof GroupSchema>) {
     data = GroupSchema.parse(data);
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -49,7 +49,7 @@ export async function createGroup(data: z.infer<typeof GroupSchema>) {
 export async function updateGroup(groupId: string, data: z.infer<typeof GroupSchema>) {
     data = GroupSchema.parse(data);
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -64,7 +64,7 @@ export async function updateGroup(groupId: string, data: z.infer<typeof GroupSch
 
 export async function deleteGroup(groupId: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -77,7 +77,7 @@ export async function deleteGroup(groupId: string) {
 
 export async function addMemberToGroup(groupId: string, userId: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -94,7 +94,7 @@ export async function addMemberToGroup(groupId: string, userId: string) {
 
 export async function removeMemberFromGroup(groupId: string, userId: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -112,7 +112,7 @@ export async function removeMemberFromGroup(groupId: string, userId: string) {
 
 export async function setGroupPermissions(groupId: string, permissions: { action: string, resource: string }[]) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

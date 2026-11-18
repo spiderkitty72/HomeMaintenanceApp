@@ -22,8 +22,8 @@ export function InventorySystemsTab({ systems, users }: InventorySystemsTabProps
     try {
       await deleteInventorySystem(id);
       toast.success("Inventory system deleted");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete system");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to delete system");
     }
   };
 

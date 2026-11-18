@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { InventorySystemSelect } from "@/components/parts/InventorySystemSelect";
+import { PartStock } from "@/components/parts/PartStock";
+import { formatMoney, getPartStock, getPartUnitCost, getSystemItem, NO_SYSTEM } from "@/lib/inventory";
 import {
     Table,
     TableBody,
@@ -17,14 +20,7 @@ import { togglePartStatus } from "@/lib/actions/parts";
 import { adjustInventory } from "@/lib/actions/inventory";
 import { removePartFromSystem } from "@/lib/actions/inventorySystems";
 import { toast } from "sonner";
-import { Package, Save, Loader2, Power, PowerOff, AlertCircle, LayoutGrid, PackageMinus, Search } from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Package, Save, Loader2, Power, PowerOff, AlertCircle, PackageMinus, Search } from "lucide-react";
 
 interface AdminInventoryProps {
     parts: any[];
@@ -34,7 +30,8 @@ interface AdminInventoryProps {
 }
 
 export function AdminInventory({ parts, allAssets, systems, userPermission }: AdminInventoryProps) {
-    const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id || "none");
+    const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id || NO_SYSTEM);
+    const selectedSystemName = systems.find((s) => s.id === selectedSystemId)?.name;
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [editStockValues, setEditStockValues] = useState<{ [key: string]: number }>({});
     const [editPriceValues, setEditPriceValues] = useState<{ [key: string]: number }>({});
@@ -87,8 +84,8 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
             const newPriceValues = { ...editPriceValues };
             delete newPriceValues[partId];
             setEditPriceValues(newPriceValues);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update inventory");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update inventory");
         } finally {
             setUpdatingId(null);
         }
@@ -98,8 +95,8 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
         try {
             await togglePartStatus(partId, !currentStatus);
             toast.success(currentStatus ? "Part deactivated" : "Part activated");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update part status");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update part status");
         }
     };
 
@@ -108,8 +105,8 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
         try {
             await removePartFromSystem(selectedSystemId, partId);
             toast.success("Part removed from system");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to remove part");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to remove part");
         }
     };
 
@@ -117,20 +114,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-muted/30 p-4 rounded-lg border">
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <LayoutGrid className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Select value={selectedSystemId} onValueChange={setSelectedSystemId}>
-                        <SelectTrigger className="w-full sm:w-[250px] bg-background">
-                            <SelectValue placeholder="Select Inventory System" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {systems.length === 0 && <SelectItem value="none">No Systems Available</SelectItem>}
-                            {systems.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                    {s.name} ({s.user?.name || s.user?.email})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <InventorySystemSelect systems={systems} value={selectedSystemId} onChange={setSelectedSystemId} showOwner className="w-full sm:w-[280px]" />
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <div className="relative w-full sm:w-[220px]">
@@ -207,27 +191,12 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    {(() => {
-                                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                        const stock = systemItem?.quantityOnHand ?? 0;
-                                        const unitCost = systemItem?.unitCost ?? part.defaultCost ?? 0;
-                                        const isTracked = !!systemItem;
-
-                                        if (!isTracked && selectedSystemId !== "none") {
-                                            return <Badge variant="outline" className="text-muted-foreground">Not Tracked</Badge>;
-                                        }
-
-                                        return (
-                                            <div className="flex flex-col gap-1">
-                                                <Badge variant={stock <= 0 ? "destructive" : "secondary"} className="w-fit">
-                                                    {stock}
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground font-mono">
-                                                    ${unitCost.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        );
-                                    })()}
+                                    <div className="flex flex-col gap-1">
+                                            <PartStock part={part} systemId={selectedSystemId} systemName={selectedSystemName} />
+                                            {getSystemItem(part, selectedSystemId) && (
+                                                <span className="text-xs text-muted-foreground font-mono">{formatMoney(getPartUnitCost(part, selectedSystemId))}</span>
+                                            )}
+                                        </div>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground italic text-sm">
                                     {part.unitOfMeasure}
@@ -235,10 +204,9 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                 {canManage && (
                                     <TableCell>
                                         {(() => {
-                                            const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                            const stock = systemItem?.quantityOnHand ?? 0;
-                                            const unitCost = systemItem?.unitCost ?? part.defaultCost ?? 0;
-                                            
+                                            const stock = getPartStock(part, selectedSystemId);
+                                            const unitCost = getPartUnitCost(part, selectedSystemId);
+
                                             return (
                                                 <div className="flex gap-2">
                                                     <Input
@@ -284,7 +252,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                             </Button>
                                             <AddPartDialog mode="edit" part={part} assets={allAssets} selectedSystemId={selectedSystemId} />
                                             {(() => {
-                                                const isTracked = !!part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                                                const isTracked = !!getSystemItem(part, selectedSystemId);
                                                 return isTracked && selectedSystemId !== "none" ? (
                                                     <Button
                                                         size="sm"

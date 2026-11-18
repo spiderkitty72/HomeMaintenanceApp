@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, SlidersHorizontal } from "lucide-react";
@@ -21,7 +20,7 @@ export function SpecList({ assetId, specs }: SpecListProps) {
         try {
             await deleteAssetSpec(id, assetId);
             toast.success("Specification deleted successfully");
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete specification");
         }
     }

@@ -34,7 +34,7 @@ export function ScheduleList({ schedules, assetId, trackingMethod, currentUsage 
         try {
             await deleteSchedule(id, assetId);
             toast.success("Schedule deleted");
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete schedule");
         }
     };

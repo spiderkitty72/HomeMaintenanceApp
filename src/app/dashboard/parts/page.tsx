@@ -47,7 +47,7 @@ export default async function PartsPage() {
                         Inventory
                     </CardTitle>
                     <CardDescription>
-                        A list of all parts you've added to your catalog.
+                        A list of all parts you&apos;ve added to your catalog.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

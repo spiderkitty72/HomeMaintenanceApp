@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingBag, Calendar, User, Store } from "lucide-react";
+import { Trash2, Calendar, User, Store } from "lucide-react";
 import { deletePartPurchase } from "@/lib/actions/inventory";
 import { toast } from "sonner";
 import { formatUtcDate } from "@/lib/utils";
@@ -25,7 +25,7 @@ export function AdminPurchaseList({ purchases }: AdminPurchaseListProps) {
         try {
             await deletePartPurchase(id);
             toast.success("Purchase deleted and inventory adjusted");
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete purchase");
         } finally {
             setIsDeleting(null);

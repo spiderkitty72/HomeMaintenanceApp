@@ -28,7 +28,7 @@ import { ExportDataButton } from "@/components/admin/ExportDataButton";
 
 export default async function AdminDashboardPage() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         redirect("/dashboard");
     }
 

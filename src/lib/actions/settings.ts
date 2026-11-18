@@ -9,7 +9,7 @@ export async function getSystemSetting(key: string) {
         throw new Error("Unauthorized");
     }
 
-    const role = (session.user as any).role;
+    const role = session.user.role;
     // Allow non-admins to read safe UI configurations, restrict secrets to ADMIN
     if (role !== "ADMIN" && key !== "reminder_schedule") {
         throw new Error("Unauthorized");
@@ -30,7 +30,7 @@ export async function getSystemSetting(key: string) {
 
 export async function setSystemSetting(key: string, value: any) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

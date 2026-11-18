@@ -28,7 +28,7 @@ export async function getSpecTypes() {
  */
 export async function getAllSpecTypesSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -47,7 +47,7 @@ export async function getAllSpecTypesSystem() {
 
 export async function updateSpecType(id: string, name: string, unit: string | null) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -62,7 +62,7 @@ export async function updateSpecType(id: string, name: string, unit: string | nu
 
 export async function toggleSpecTypeStatus(id: string, isActive: boolean) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

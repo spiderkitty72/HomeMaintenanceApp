@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { checkPermission } from "@/lib/permissions";
 
 const PurchaseItemSchema = z.object({
     partId: z.string(),
@@ -31,7 +31,7 @@ export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
         const p = await prisma.part.findUnique({ where: { id: item.partId } });
         if (!p) throw new Error(`Part ${item.partId} not found`);
 
-        const isAdmin = (session.user as any).role === "ADMIN";
+        const isAdmin = session.user.role === "ADMIN";
         const isOwner = p.userId === userId;
         const hasPermission = await checkPermission("EDIT", "PART");
 
@@ -108,7 +108,7 @@ export async function getPartPurchases(partId: string) {
     if (!session?.user?.id) return [];
 
     const userId = session.user.id;
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
 
     // Return line items for this specific part, limited to purchases the user made
     // or that belong to an inventory system they own or have access to
@@ -146,7 +146,7 @@ export async function getPartPurchases(partId: string) {
  */
 export async function getAllPurchasesSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -172,7 +172,7 @@ export async function getAllPurchasesSystem() {
 
 export async function deletePartPurchase(id: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -215,7 +215,7 @@ export async function deletePartPurchase(id: string) {
 
 export async function updatePartPurchase(id: string, data: { date: Date, vendor?: string }) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -239,7 +239,7 @@ export async function adjustInventory(partId: string, systemId: string, newQuant
     const system = await prisma.inventorySystem.findUnique({ where: { id: systemId } });
     if (!system) throw new Error("System not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = system.userId === session.user.id;
 
     if (!isAdmin && !isOwner) {

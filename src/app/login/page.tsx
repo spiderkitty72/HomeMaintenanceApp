@@ -34,7 +34,7 @@ export default function LoginPage() {
                 router.push("/dashboard");
                 router.refresh();
             }
-        } catch (error) {
+        } catch {
             toast.error("An error occurred during sign in");
         } finally {
             setLoading(false);
@@ -81,8 +81,8 @@ export default function LoginPage() {
                         </Button>
                     </form>
                     <div className="mt-6 text-center text-sm text-muted-foreground">
-                        <p>Don't have an account? Contact your administrator.</p>
-                        <p className="mt-2 font-mono text-[10px] opacity-50 text-xs">Hint: You'll need to seed the DB or create a user manually first.</p>
+                        <p>Don&apos;t have an account? Contact your administrator.</p>
+                        <p className="mt-2 font-mono text-[10px] opacity-50 text-xs">Hint: You&apos;ll need to seed the DB or create a user manually first.</p>
                     </div>
                 </CardContent>
             </Card>

@@ -25,7 +25,7 @@ export function AdminSystemTab() {
     const handleBackup = async () => {
         setIsBackingUp(true);
         try {
-            const result = await createDatabaseBackup();
+            await createDatabaseBackup();
             toast.success("Database backup created successfully on the server.");
         } catch (error) {
             toast.error("Failed to create database backup.");
@@ -85,7 +85,7 @@ export function AdminSystemTab() {
                 }
             };
             reader.readAsText(file);
-        } catch (error) {
+        } catch {
             toast.error("Failed to read file.");
             setIsImporting(false);
         }

@@ -62,8 +62,8 @@ export function ManageAssetAccessDialog({ asset, allUsers, trigger }: ManageAsse
             await updateAssetAccess(asset.id, ownerId, sharedUserIds);
             toast.success("Asset access updated successfully");
             setOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update asset access");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update asset access");
         } finally {
             setLoading(false);
         }

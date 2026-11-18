@@ -34,7 +34,7 @@ export default async function FuelDetailPage({ params }: { params: Promise<{ id:
         notFound();
     }
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = record.asset.userId === session.user.id;
     const hasEditPermission = await checkPermission("EDIT", "FUEL");
     const hasDeletePermission = await checkPermission("DELETE", "FUEL");

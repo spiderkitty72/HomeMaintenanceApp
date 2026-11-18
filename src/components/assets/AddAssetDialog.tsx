@@ -108,7 +108,7 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
                 ...values,
                 details: JSON.stringify(finalDetails),
             };
-            // @ts-ignore
+            // @ts-expect-error customSpecs is a form-only field and isn't part of the submitted type
             delete dataToSubmit.customSpecs;
 
             if (isEditing && asset) {
@@ -120,8 +120,8 @@ export function AddAssetDialog({ asset, trigger }: AddAssetDialogProps) {
             }
             setOpen(false);
             if (!isEditing) form.reset();
-        } catch (error: any) {
-            toast.error(error.message || `Failed to ${isEditing ? "update" : "create"} asset`);
+        } catch (error) {
+            toast.error((error as Error).message || `Failed to ${isEditing ? "update" : "create"} asset`);
         }
     }
 

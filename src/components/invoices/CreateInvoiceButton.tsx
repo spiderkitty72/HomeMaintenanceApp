@@ -52,8 +52,8 @@ export function CreateInvoiceButton({
             toast.success("Invoice created");
             setOpen(false);
             setNotes("");
-        } catch (e: any) {
-            toast.error(e?.message || "Failed to create invoice");
+        } catch (e) {
+            toast.error((e as Error)?.message || "Failed to create invoice");
         } finally {
             setLoading(false);
         }

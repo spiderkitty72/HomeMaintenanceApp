@@ -1,10 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ASSET_TYPES, TRACKING_METHODS } from "@/lib/constants";
-import { Asset } from "@prisma/client";
-import { Car, Home, Wrench, MoreVertical, Fuel as FuelIcon, Plus } from "lucide-react";
+import { Car, Home, Wrench, MoreVertical, Fuel as FuelIcon, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AddFuelDialog } from "@/components/fuel/AddFuelDialog";
@@ -19,7 +17,7 @@ import { dismissReminder } from "@/lib/actions/schedules";
 import { Bell } from "lucide-react";
 import { formatHouseUsage } from "@/lib/utils";
 import { toast } from "sonner";
-import { toggleAssetArchived } from "@/lib/actions/assets";
+import { toggleAssetArchived, setAssetFavorite } from "@/lib/actions/assets";
 
 interface AssetCardProps {
     asset: any;
@@ -31,6 +29,22 @@ export function AssetCard({ asset, currentUserId, maxDaysToEstimate = 30 }: Asse
     const Icon = asset.type === ASSET_TYPES.CAR ? Car : asset.type === ASSET_TYPES.HOUSE ? Home : Wrench;
     const [showReminders, setShowReminders] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [isFavorite, setIsFavorite] = useState<boolean>(!!asset.isFavorite);
+
+    const toggleFavorite = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const next = !isFavorite;
+        setIsFavorite(next);
+        startTransition(async () => {
+            try {
+                await setAssetFavorite(asset.id, next);
+            } catch {
+                setIsFavorite(!next);
+                toast.error("Couldn't update favorites");
+            }
+        });
+    };
 
     const targetDate = addDays(new Date(), 7);
     const daysSinceUpdate = asset.usageUpdatedAt ? Math.max(0, differenceInDays(new Date(), new Date(asset.usageUpdatedAt))) : 0;
@@ -111,7 +125,18 @@ export function AssetCard({ asset, currentUserId, maxDaysToEstimate = 30 }: Asse
                         </div>
                     </div>
 
-                    <div className="pointer-events-auto">
+                    <div className="pointer-events-auto flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+                            onClick={toggleFavorite}
+                            aria-pressed={isFavorite}
+                            aria-label={isFavorite ? `Remove ${asset.name} from favorites` : `Add ${asset.name} to favorites`}
+                            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                        >
+                            <Star className={isFavorite ? "h-4 w-4 fill-yellow-400 text-yellow-400" : "h-4 w-4"} />
+                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -142,8 +167,8 @@ export function AssetCard({ asset, currentUserId, maxDaysToEstimate = 30 }: Asse
                                             try {
                                                 await toggleAssetArchived(asset.id, true);
                                                 toast.success("Asset archived successfully");
-                                            } catch (error: any) {
-                                                toast.error(error.message || "Failed to archive asset");
+                                            } catch (error) {
+                                                toast.error((error as Error).message || "Failed to archive asset");
                                             }
                                         }
                                     }}

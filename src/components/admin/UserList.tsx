@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Shield, ShieldCheck, Trash2, Mail, Settings2 } from "lucide-react";
+import { User, Shield, ShieldCheck, Trash2, Mail } from "lucide-react";
 import { deleteUser } from "@/lib/actions/users";
 import { toast } from "sonner";
 import { EditUserDialog } from "./EditUserDialog";
@@ -19,8 +18,8 @@ export function UserList({ users }: UserListProps) {
         try {
             await deleteUser(id);
             toast.success("User deleted");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete user");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to delete user");
         }
     };
 

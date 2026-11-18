@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Power, PowerOff } from "lucide-react";
+import { Power, PowerOff } from "lucide-react";
 import { toggleSpecTypeStatus } from "@/lib/actions/specs";
 import { toast } from "sonner";
 import { EditSpecTypeDialog } from "./EditSpecTypeDialog";
@@ -21,7 +21,7 @@ export function AdminSpecTypeList({ specTypes }: AdminSpecTypeListProps) {
         try {
             await toggleSpecTypeStatus(id, !currentStatus);
             toast.success(`Spec type ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update status");
         } finally {
             setIsPending(null);

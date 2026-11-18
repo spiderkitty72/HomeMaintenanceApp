@@ -1,29 +1,25 @@
 "use client";
 
-import { useState } from "react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Info, Github, Box, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import packageJson from "../../../package.json";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function AboutDialog() {
-    const [open, setOpen] = useState(false);
+interface AboutDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
 
+/** Opened from the settings menu (desktop) or the mobile menu. */
+export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <button className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer w-full text-left bg-transparent border-0 p-0 m-0">
-                    <Info className="h-4 w-4 md:hidden" />
-                    <span>About</span>
-                </button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

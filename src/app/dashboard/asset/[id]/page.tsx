@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -16,7 +15,6 @@ import { Bell, Calendar, Gauge, History, Settings, Droplet, TrendingUp, AlertTri
 import { Button } from "@/components/ui/button";
 import { getSchedules } from "@/lib/actions/schedules";
 import { ScheduleList } from "@/components/schedules/ScheduleList";
-import { AddScheduleDialog } from "@/components/schedules/AddScheduleDialog";
 import { isBefore } from "date-fns";
 import { getCompatibleParts } from "@/lib/actions/parts";
 import { Package, ListChecks, FileText } from "lucide-react";
@@ -28,7 +26,6 @@ import { getAssets } from "@/lib/actions/assets";
 import { formatHouseUsage, formatUtcDate, getDynamicAssetUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { Badge } from "@/components/ui/badge";
-import { AddPartDialog } from "@/components/parts/AddPartDialog";
 
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;

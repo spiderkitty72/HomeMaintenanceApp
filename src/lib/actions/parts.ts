@@ -129,6 +129,8 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>, s
         throw new Error("Unauthorized");
     }
 
+    // quantityOnHand is tracked per inventory system now, so it is not written to the part itself.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { assetIds, quantityOnHand, ...partData } = data;
 
     const existing = await prisma.part.findUnique({
@@ -137,7 +139,7 @@ export async function updatePart(id: string, data: z.infer<typeof PartSchema>, s
 
     if (!existing) throw new Error("Part not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.userId === session.user.id;
     const hasPermission = await checkPermission("EDIT", "PART");
 
@@ -194,7 +196,7 @@ export async function deletePart(id: string) {
 
     if (!existing) throw new Error("Part not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.userId === session.user.id;
     const hasPermission = await checkPermission("DELETE", "PART");
 
@@ -226,7 +228,7 @@ export async function deletePart(id: string) {
 
 export async function getAllPartsSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -255,7 +257,7 @@ export async function getAllPartsSystem() {
 
 export async function togglePartStatus(id: string, isActive: boolean) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

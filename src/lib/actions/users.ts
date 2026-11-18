@@ -15,7 +15,7 @@ const CreateUserSchema = z.object({
 
 export async function getUsers() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -59,7 +59,7 @@ export async function getUsersPublic() {
 export async function createUser(data: z.infer<typeof CreateUserSchema>) {
     data = CreateUserSchema.parse(data);
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -80,7 +80,7 @@ export async function createUser(data: z.infer<typeof CreateUserSchema>) {
 
 export async function deleteUser(userId: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -98,7 +98,7 @@ export async function deleteUser(userId: string) {
 export async function updateUser(userId: string, data: Partial<z.infer<typeof CreateUserSchema>>) {
     data = CreateUserSchema.partial().parse(data);
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -127,7 +127,7 @@ export async function updateSelf(data: { name?: string; email?: string; themeLig
 
     let preferencesObj: Record<string, any> = {};
     if (existing?.preferences) {
-        try { preferencesObj = JSON.parse(existing.preferences); } catch (e) {}
+        try { preferencesObj = JSON.parse(existing.preferences); } catch {}
     }
 
     if (data.themeLight) preferencesObj.themeLight = data.themeLight;
@@ -176,7 +176,7 @@ export async function changePassword(data: { currentPassword: string; newPasswor
 
 export async function adminResetPassword(userId: string, newPassword: string) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

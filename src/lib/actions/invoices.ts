@@ -35,7 +35,7 @@ export async function createInvoice(
     if (!inventorySystem) throw new Error("Inventory system not found");
     if (serviceRecord.parts.length === 0) throw new Error("No parts from this inventory system in the service record");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && inventorySystem.userId !== session.user.id) {
         throw new Error("Only the inventory system owner can create invoices");
     }
@@ -130,7 +130,7 @@ export async function getInvoice(id: string) {
 
     if (!invoice) throw new Error("Invoice not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && invoice.fromUserId !== session.user.id && invoice.toUserId !== session.user.id) {
         throw new Error("Unauthorized");
     }
@@ -145,7 +145,7 @@ export async function markInvoicePaid(id: string) {
     const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) throw new Error("Invoice not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && invoice.fromUserId !== session.user.id) {
         throw new Error("Only the issuer can mark an invoice as paid");
     }
@@ -167,7 +167,7 @@ export async function markInvoiceUnpaid(id: string) {
     const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) throw new Error("Invoice not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && invoice.fromUserId !== session.user.id) {
         throw new Error("Only the issuer can change invoice status");
     }
@@ -189,7 +189,7 @@ export async function deleteInvoice(id: string) {
     const invoice = await prisma.invoice.findUnique({ where: { id } });
     if (!invoice) throw new Error("Invoice not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && invoice.fromUserId !== session.user.id) {
         throw new Error("Only the issuer can delete an invoice");
     }

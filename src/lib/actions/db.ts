@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { ensurePermission } from "@/lib/permissions";
 import fs from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
@@ -12,7 +11,7 @@ import { revalidatePath } from "next/cache";
  */
 export async function createDatabaseBackup() {
     const session = await auth();
-    if ((session?.user as any)?.role !== "ADMIN") {
+    if (session?.user?.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -45,7 +44,7 @@ export async function createDatabaseBackup() {
  */
 export async function exportDatabaseJSON() {
     const session = await auth();
-    if ((session?.user as any)?.role !== "ADMIN") {
+    if (session?.user?.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -98,7 +97,7 @@ function parseDates(obj: any): any {
 
 export async function importDatabaseJSON(data: any) {
     const session = await auth();
-    if ((session?.user as any)?.role !== "ADMIN") {
+    if (session?.user?.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

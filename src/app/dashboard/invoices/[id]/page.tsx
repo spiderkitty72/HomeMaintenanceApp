@@ -22,7 +22,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     }
 
     const total = invoice.lineItems.reduce((sum: number, l: any) => sum + l.quantity * l.unitCost, 0);
-    const isIssuer = invoice.fromUserId === session.user.id || (session.user as any).role === "ADMIN";
+    const isIssuer = invoice.fromUserId === session.user.id || session.user.role === "ADMIN";
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-3xl">

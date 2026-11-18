@@ -11,7 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Fuel, Paperclip, ChevronRight, Calendar, Calculator, Banknote, Droplets, Tag, Gauge } from "lucide-react";
+import { Fuel, Paperclip, ChevronRight, Calendar, Calculator, Droplets, Tag, Gauge } from "lucide-react";
 import Link from "next/link";
 import { FuelChart } from "./FuelChart";
 

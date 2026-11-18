@@ -10,7 +10,7 @@ export type PermissionResource = "ASSET" | "SERVICE" | "FUEL" | "PART";
  */
 export async function checkPermission(action: PermissionAction, resource: PermissionResource) {
     const session = await auth();
-    const user = session?.user as any;
+    const user = session?.user;
 
     if (!user?.id) return false;
 
@@ -56,7 +56,7 @@ export async function ensurePermission(action: PermissionAction, resource: Permi
  */
 export async function canAccessAsset(assetId: string) {
     const session = await auth();
-    const user = session?.user as any;
+    const user = session?.user;
     if (!user?.id) return false;
     if (user.role === "ADMIN") return true;
 
