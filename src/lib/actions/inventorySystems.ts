@@ -160,10 +160,20 @@ export async function addPartToSystem(systemId: string, partId: string) {
   const access = await getSystemAccessLevel(systemId);
   if (!access || access === "VIEW") throw new Error("Unauthorized: insufficient access");
 
+  const part = await prisma.part.findUnique({
+    where: { id: partId },
+    select: { defaultCost: true },
+  });
+
   const item = await prisma.inventoryItem.upsert({
     where: { inventorySystemId_partId: { inventorySystemId: systemId, partId } },
     update: {},
-    create: { inventorySystemId: systemId, partId, quantityOnHand: 0 },
+    create: { 
+      inventorySystemId: systemId, 
+      partId, 
+      quantityOnHand: 0,
+      unitCost: part?.defaultCost || 0 
+    },
   });
 
   revalidatePath("/dashboard/parts");

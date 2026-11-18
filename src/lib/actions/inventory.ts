@@ -83,11 +83,13 @@ export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
                         quantityOnHand: {
                             increment: item.quantity,
                         },
+                        unitCost: item.costPerUnit,
                     },
                     create: {
                         inventorySystemId: data.inventorySystemId,
                         partId: item.partId,
                         quantityOnHand: item.quantity,
+                        unitCost: item.costPerUnit,
                     }
                 });
             }
@@ -216,7 +218,7 @@ export async function updatePartPurchase(id: string, data: { date: Date, vendor?
     return updated;
 }
 
-export async function adjustInventory(partId: string, systemId: string, newQuantity: number) {
+export async function adjustInventory(partId: string, systemId: string, newQuantity?: number, newUnitCost?: number) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -230,6 +232,30 @@ export async function adjustInventory(partId: string, systemId: string, newQuant
         throw new Error("Unauthorized to adjust inventory in this system");
     }
 
+    const updateData: any = {};
+    if (newQuantity !== undefined) {
+        updateData.quantityOnHand = newQuantity;
+    }
+    if (newUnitCost !== undefined) {
+        updateData.unitCost = newUnitCost;
+    }
+
+    const createData: any = {
+        inventorySystemId: systemId,
+        partId: partId,
+    };
+    createData.quantityOnHand = newQuantity !== undefined ? newQuantity : 0;
+    
+    if (newUnitCost !== undefined) {
+        createData.unitCost = newUnitCost;
+    } else {
+        const part = await prisma.part.findUnique({
+            where: { id: partId },
+            select: { defaultCost: true },
+        });
+        createData.unitCost = part?.defaultCost || 0;
+    }
+
     const item = await prisma.inventoryItem.upsert({
         where: {
             inventorySystemId_partId: {
@@ -237,14 +263,8 @@ export async function adjustInventory(partId: string, systemId: string, newQuant
                 partId: partId,
             }
         },
-        update: {
-            quantityOnHand: newQuantity,
-        },
-        create: {
-            inventorySystemId: systemId,
-            partId: partId,
-            quantityOnHand: newQuantity,
-        }
+        update: updateData,
+        create: createData
     });
 
     revalidatePath("/dashboard/parts");

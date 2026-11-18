@@ -36,7 +36,8 @@ interface AdminInventoryProps {
 export function AdminInventory({ parts, allAssets, systems, userPermission }: AdminInventoryProps) {
     const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id || "none");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
-    const [editValues, setEditValues] = useState<{ [key: string]: number }>({});
+    const [editStockValues, setEditStockValues] = useState<{ [key: string]: number }>({});
+    const [editPriceValues, setEditPriceValues] = useState<{ [key: string]: number }>({});
     const [search, setSearch] = useState("");
 
     const canManage = !userPermission || userPermission === "OWNER" || userPermission === "MANAGE";
@@ -54,25 +55,38 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
         );
     });
 
-    const handleLevelChange = (partId: string, value: string) => {
-        setEditValues((prev) => ({
+    const handleStockChange = (partId: string, value: string) => {
+        setEditStockValues((prev) => ({
+            ...prev,
+            [partId]: parseFloat(value) || 0,
+        }));
+    };
+
+    const handlePriceChange = (partId: string, value: string) => {
+        setEditPriceValues((prev) => ({
             ...prev,
             [partId]: parseFloat(value) || 0,
         }));
     };
 
     const handleSave = async (partId: string) => {
-        const newValue = editValues[partId];
-        if (newValue === undefined || selectedSystemId === "none") return;
+        const newStock = editStockValues[partId];
+        const newPrice = editPriceValues[partId];
+        if (newStock === undefined && newPrice === undefined) return;
+        if (selectedSystemId === "none") return;
 
         setUpdatingId(partId);
         try {
-            await adjustInventory(partId, selectedSystemId, newValue);
+            await adjustInventory(partId, selectedSystemId, newStock, newPrice);
             toast.success("Inventory level updated");
-            // Remove from edit state
-            const newEditValues = { ...editValues };
-            delete newEditValues[partId];
-            setEditValues(newEditValues);
+            // Remove from edit states
+            const newStockValues = { ...editStockValues };
+            delete newStockValues[partId];
+            setEditStockValues(newStockValues);
+
+            const newPriceValues = { ...editPriceValues };
+            delete newPriceValues[partId];
+            setEditPriceValues(newPriceValues);
         } catch (error: any) {
             toast.error(error.message || "Failed to update inventory");
         } finally {
@@ -146,9 +160,9 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                         <TableRow>
                             <TableHead>Part Name</TableHead>
                             <TableHead>Assets</TableHead>
-                            <TableHead>Current Stock</TableHead>
+                            <TableHead>Stock & Price</TableHead>
                             <TableHead>UOM</TableHead>
-                            {canManage && <TableHead className="w-[150px]">Manual Adjust</TableHead>}
+                            {canManage && <TableHead className="w-[280px]">Manual Adjust</TableHead>}
                             {canManage && <TableHead className="text-right w-[120px]">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -196,6 +210,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                     {(() => {
                                         const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
                                         const stock = systemItem?.quantityOnHand ?? 0;
+                                        const unitCost = systemItem?.unitCost ?? part.defaultCost ?? 0;
                                         const isTracked = !!systemItem;
 
                                         if (!isTracked && selectedSystemId !== "none") {
@@ -203,9 +218,14 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                         }
 
                                         return (
-                                            <Badge variant={stock <= 0 ? "destructive" : "secondary"}>
-                                                {stock}
-                                            </Badge>
+                                            <div className="flex flex-col gap-1">
+                                                <Badge variant={stock <= 0 ? "destructive" : "secondary"} className="w-fit">
+                                                    {stock}
+                                                </Badge>
+                                                <span className="text-xs text-muted-foreground font-mono">
+                                                    ${unitCost.toFixed(2)}
+                                                </span>
+                                            </div>
                                         );
                                     })()}
                                 </TableCell>
@@ -217,17 +237,31 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                         {(() => {
                                             const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
                                             const stock = systemItem?.quantityOnHand ?? 0;
+                                            const unitCost = systemItem?.unitCost ?? part.defaultCost ?? 0;
                                             
                                             return (
-                                                <Input
-                                                    type="number"
-                                                    step="any"
-                                                    className="h-8"
-                                                    disabled={selectedSystemId === "none"}
-                                                    placeholder={stock.toString()}
-                                                    value={editValues[part.id] !== undefined ? editValues[part.id] : ""}
-                                                    onChange={(e) => handleLevelChange(part.id, e.target.value)}
-                                                />
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        type="number"
+                                                        step="any"
+                                                        className="h-8 w-20"
+                                                        disabled={selectedSystemId === "none"}
+                                                        placeholder={stock.toString()}
+                                                        value={editStockValues[part.id] !== undefined ? editStockValues[part.id] : ""}
+                                                        onChange={(e) => handleStockChange(part.id, e.target.value)}
+                                                        title="Adjust stock quantity"
+                                                    />
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="h-8 w-24"
+                                                        disabled={selectedSystemId === "none"}
+                                                        placeholder={`$${unitCost.toFixed(2)}`}
+                                                        value={editPriceValues[part.id] !== undefined ? editPriceValues[part.id] : ""}
+                                                        onChange={(e) => handlePriceChange(part.id, e.target.value)}
+                                                        title="Adjust unit price"
+                                                    />
+                                                </div>
                                             );
                                         })()}
                                     </TableCell>
@@ -238,7 +272,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                disabled={updatingId === part.id || editValues[part.id] === undefined}
+                                                disabled={updatingId === part.id || (editStockValues[part.id] === undefined && editPriceValues[part.id] === undefined)}
                                                 onClick={() => handleSave(part.id)}
                                                 title="Save adjustment"
                                             >
@@ -248,7 +282,7 @@ export function AdminInventory({ parts, allAssets, systems, userPermission }: Ad
                                                     <Save className="h-4 w-4" />
                                                 )}
                                             </Button>
-                                            <AddPartDialog mode="edit" part={part} assets={allAssets} />
+                                            <AddPartDialog mode="edit" part={part} assets={allAssets} selectedSystemId={selectedSystemId} />
                                             {(() => {
                                                 const isTracked = !!part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
                                                 return isTracked && selectedSystemId !== "none" ? (

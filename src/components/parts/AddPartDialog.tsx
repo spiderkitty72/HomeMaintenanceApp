@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -55,9 +55,10 @@ interface AddPartDialogProps {
     assets: any[];
     preselectedAssetId?: string;
     onSuccess?: (part: any) => void;
+    selectedSystemId?: string;
 }
 
-export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, onSuccess }: AddPartDialogProps) {
+export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, onSuccess, selectedSystemId }: AddPartDialogProps) {
     const [open, setOpen] = useState(false);
 
     const form = useForm<PartFormValues>({
@@ -75,6 +76,30 @@ export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, 
         },
     });
 
+    useEffect(() => {
+        if (open) {
+            form.reset({
+                name: part?.name || "",
+                partNumber: part?.partNumber || "",
+                manufacturer: part?.manufacturer || "",
+                compatibleType: part?.compatibleType || "",
+                assetIds: part?.compatibilities?.map((c: any) => c.assetId) || (preselectedAssetId ? [preselectedAssetId] : []),
+                defaultCost: (() => {
+                    if (part && selectedSystemId && selectedSystemId !== "none") {
+                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
+                        if (systemItem && systemItem.unitCost !== undefined) {
+                            return systemItem.unitCost;
+                        }
+                    }
+                    return part?.defaultCost || 0;
+                })(),
+                unitOfMeasure: part?.unitOfMeasure || "pcs",
+                quantityOnHand: part?.quantityOnHand || 0,
+                image: part?.image || "",
+            });
+        }
+    }, [open, part, selectedSystemId]);
+
     async function onSubmit(values: PartFormValues) {
         try {
             const submissionValues = {
@@ -83,7 +108,7 @@ export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, 
             };
 
             if (mode === "edit" && part) {
-                const updatedPart = await updatePart(part.id, submissionValues);
+                const updatedPart = await updatePart(part.id, submissionValues, selectedSystemId);
                 toast.success("Part updated");
                 onSuccess?.(updatedPart);
             } else {

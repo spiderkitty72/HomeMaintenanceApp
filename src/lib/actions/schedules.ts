@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { calculateDailyUsage, predictNextDueDate } from "@/lib/predictions";
 import { ensurePermission } from "@/lib/permissions";
+import { getDynamicAssetUsage } from "@/lib/utils";
 
 const ScheduleSchema = z.object({
     assetId: z.string(),
@@ -28,6 +29,7 @@ export async function createSchedule(data: z.infer<typeof ScheduleSchema>) {
     });
 
     if (!asset) throw new Error("Asset not found");
+    asset.currentUsage = getDynamicAssetUsage(asset);
 
     const dailyUsage = calculateDailyUsage(asset.fuelRecords);
 
@@ -62,6 +64,7 @@ export async function updateSchedule(id: string, data: z.infer<typeof ScheduleSc
     });
 
     if (!asset) throw new Error("Asset not found");
+    asset.currentUsage = getDynamicAssetUsage(asset);
 
     const dailyUsage = calculateDailyUsage(asset.fuelRecords);
 
@@ -104,6 +107,7 @@ export async function refreshPredictions(assetId: string) {
     });
 
     if (!asset) return;
+    asset.currentUsage = getDynamicAssetUsage(asset);
 
     const dailyUsage = calculateDailyUsage(asset.fuelRecords);
 

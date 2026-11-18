@@ -335,6 +335,7 @@ model InventoryItem {
   inventorySystemId String
   partId            String
   quantityOnHand    Float   @default(0)
+  unitCost          Float   @default(0)
 
   inventorySystem   InventorySystem @relation(fields: [inventorySystemId], references: [id], onDelete: Cascade)
   part              Part            @relation(fields: [partId], references: [id], onDelete: Cascade)

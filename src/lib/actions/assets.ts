@@ -7,6 +7,7 @@ import { z } from "zod";
 import { ASSET_TYPES, AssetType, TrackingMethod } from "@/lib/constants";
 import { ensurePermission, checkPermission } from "@/lib/permissions";
 import { differenceInDays } from "date-fns";
+import { withDynamicUsageList } from "@/lib/utils";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -82,7 +83,7 @@ export async function getAssets() {
         return [];
     }
 
-    return await prisma.asset.findMany({
+    const assets = await prisma.asset.findMany({
         where: {
             isArchived: false,
             OR: [
@@ -113,6 +114,8 @@ export async function getAssets() {
             createdAt: "desc",
         },
     });
+
+    return withDynamicUsageList(assets);
 }
 
 export async function getAllAssetsSystem() {
@@ -121,7 +124,7 @@ export async function getAllAssetsSystem() {
         throw new Error("Unauthorized");
     }
 
-    return await prisma.asset.findMany({
+    const assets = await prisma.asset.findMany({
         include: {
             owner: {
                 select: {
@@ -146,6 +149,8 @@ export async function getAllAssetsSystem() {
             name: "asc",
         },
     });
+
+    return withDynamicUsageList(assets);
 }
 
 export async function updateAssetAccess(id: string, ownerId: string, sharedUserIds: string[]) {

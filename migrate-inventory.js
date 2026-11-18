@@ -31,12 +31,14 @@ async function main() {
                         }
                     },
                     update: {
-                        quantityOnHand: part.quantityOnHand
+                        quantityOnHand: part.quantityOnHand,
+                        unitCost: part.defaultCost
                     },
                     create: {
                         inventorySystemId: system.id,
                         partId: part.id,
-                        quantityOnHand: part.quantityOnHand
+                        quantityOnHand: part.quantityOnHand,
+                        unitCost: part.defaultCost
                     }
                 });
                 migratedParts++;
