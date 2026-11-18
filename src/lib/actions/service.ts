@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { refreshPredictions } from "./schedules";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { refreshPredictions } from "@/lib/predictionRefresh";
+import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
 import { addDays } from "date-fns";
 
@@ -14,11 +14,11 @@ const ServiceRecordSchema = z.object({
     date: z.date(),
     usageAtService: z.number(),
     summary: z.string().min(2),
-    notes: z.string().optional(),
+    notes: z.string().nullish(),
     totalCost: z.number(),
-    vendor: z.string().optional(),
-    image: z.string().optional(),
-    imageName: z.string().optional(),
+    vendor: z.string().nullish(),
+    image: z.string().nullish(),
+    imageName: z.string().nullish(),
     parts: z.array(z.object({
         partId: z.string(),
         quantity: z.number(),
@@ -29,10 +29,12 @@ const ServiceRecordSchema = z.object({
 });
 
 export async function createServiceRecord(data: z.infer<typeof ServiceRecordSchema>) {
+    data = ServiceRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     await ensurePermission("CREATE", "SERVICE");
+    await ensureAssetAccess(data.assetId);
 
     const result = await prisma.$transaction(async (tx) => {
         const serviceRecord = await tx.serviceRecord.create({
@@ -134,7 +136,7 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
 
 export async function getServiceRecords(assetId: string) {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !(await canAccessAsset(assetId))) {
         return [];
     }
 
@@ -158,7 +160,7 @@ export async function getServiceRecord(id: string) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await prisma.serviceRecord.findUnique({
+    const record = await prisma.serviceRecord.findUnique({
         where: { id },
         include: {
             asset: {
@@ -176,6 +178,9 @@ export async function getServiceRecord(id: string) {
             attachments: true,
         },
     });
+
+    if (!record || !(await canAccessAsset(record.assetId))) return null;
+    return record;
 }
 
 export async function getAllServiceRecordsSystem() {
@@ -213,6 +218,7 @@ export async function getAllServiceRecordsSystem() {
 }
 
 export async function updateServiceRecord(id: string, data: z.infer<typeof ServiceRecordSchema>) {
+    data = ServiceRecordSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 

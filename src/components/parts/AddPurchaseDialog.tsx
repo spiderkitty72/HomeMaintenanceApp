@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
+import { todayInputValue } from "@/lib/utils";
 
 const purchaseItemSchema = z.object({
     partId: z.string().min(1, "Please select a part"),
@@ -70,7 +71,7 @@ export function AddPurchaseDialog({ parts, assets = [], inventorySystems }: AddP
         resolver: zodResolver(purchaseSchema) as any,
         defaultValues: {
             vendor: "",
-            date: new Date().toISOString().split("T")[0],
+            date: todayInputValue(),
             image: "",
             inventorySystemId: inventorySystems[0]?.id || "",
             items: [{ partId: "", quantity: 1, costPerUnit: 0 }],

@@ -2,13 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { auth } from "@/auth";
+import { UPLOAD_DIR, getExtension, getServedContentType, isSafeUploadName } from "@/lib/uploads";
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ filename: string }> }
 ) {
+    // /api routes are outside the auth middleware, so check the session here
+    const session = await auth();
+    if (!session?.user?.id) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
     const { filename } = await params;
-    const filePath = join(process.cwd(), "public", "uploads", filename);
+
+    // The filename arrives URL-decoded, so "..%2F" becomes "../". Only plain upload names are allowed.
+    if (!isSafeUploadName(filename)) {
+        return new NextResponse("Image not found", { status: 404 });
+    }
+
+    const filePath = join(UPLOAD_DIR, filename);
 
     if (!existsSync(filePath)) {
         return new NextResponse("Image not found", { status: 404 });
@@ -17,25 +31,13 @@ export async function GET(
     try {
         const fileBuffer = await readFile(filePath);
 
-        // Determine content type based on extension
-        const ext = filename.split(".").pop()?.toLowerCase();
-        let contentType = "application/octet-stream";
-        if (ext === "pdf") contentType = "application/pdf";
-        else if (ext === "docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        else if (ext === "doc") contentType = "application/msword";
-        else if (ext === "xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        else if (ext === "xls") contentType = "application/vnd.ms-excel";
-        else if (ext === "txt") contentType = "text/plain";
-        else if (ext === "png") contentType = "image/png";
-        else if (ext === "webp") contentType = "image/webp";
-        else if (ext === "gif") contentType = "image/gif";
-        else if (ext === "svg") contentType = "image/svg+xml";
-        else if (["jpg", "jpeg"].includes(ext || "")) contentType = "image/jpeg";
-
         return new NextResponse(fileBuffer, {
             headers: {
-                "Content-Type": contentType,
-                "Cache-Control": "public, max-age=31536000, immutable",
+                "Content-Type": getServedContentType(getExtension(filename)),
+                "Cache-Control": "private, max-age=31536000, immutable",
+                "X-Content-Type-Options": "nosniff",
+                // Opening an uploaded file directly can't run scripts (e.g. inside an SVG)
+                "Content-Security-Policy": "sandbox",
             },
         });
     } catch (error) {

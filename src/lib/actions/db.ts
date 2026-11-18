@@ -16,8 +16,12 @@ export async function createDatabaseBackup() {
         throw new Error("Unauthorized");
     }
 
-    const dbPath = path.join(process.cwd(), "prisma", "dev.db");
-    const backupDir = path.join(process.cwd(), "prisma", "backups");
+    // Back up next to the live database (in Docker that's /app/data, which is bind-mounted,
+    // so backups survive container rebuilds). Relative SQLite paths in DATABASE_URL are
+    // resolved by Prisma against the prisma/ folder.
+    const dbFile = (process.env.DATABASE_URL || "file:./dev.db").replace(/^file:/, "").split("?")[0];
+    const dbPath = path.isAbsolute(dbFile) ? dbFile : path.join(process.cwd(), "prisma", dbFile);
+    const backupDir = path.join(path.dirname(dbPath), "backups");
 
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
@@ -27,7 +31,8 @@ export async function createDatabaseBackup() {
     const backupPath = path.join(backupDir, `dev-backup-${timestamp}.db`);
 
     try {
-        fs.copyFileSync(dbPath, backupPath);
+        // VACUUM INTO writes a consistent copy even while the app is using the database
+        await prisma.$executeRawUnsafe(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`);
         return { success: true, path: backupPath };
     } catch (error) {
         console.error("Backup failed:", error);

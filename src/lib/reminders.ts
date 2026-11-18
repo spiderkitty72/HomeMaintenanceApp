@@ -10,6 +10,7 @@ export async function processServiceReminders() {
 
         // 1. Fetch assets and evaluate their schedules
         const assets = await prisma.asset.findMany({
+            where: { isArchived: false },
             include: {
                 owner: true,
                 sharedWith: {

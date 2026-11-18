@@ -11,7 +11,8 @@ services:
       - ./public/uploads:/app/public/uploads
     environment:
       - DATABASE_URL=file:/app/data/dev.db
-      - AUTH_SECRET=your_auth_secret_here # Change this in your .env
+      # Required. Put AUTH_SECRET=<output of: openssl rand -base64 32> in a .env file next to this file.
+      - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET in .env (generate with: openssl rand -base64 32)}
       - AUTH_TRUST_HOST=true
       - AUTH_URL=https://maint.example.com
     restart: always

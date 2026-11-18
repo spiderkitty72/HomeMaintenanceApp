@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 
 async function ensureAuth() {
     const session = await auth();
@@ -86,6 +87,7 @@ export async function addSpecType(name: string, unit: string | null) {
 }
 
 export async function getAssetSpecs(assetId: string) {
+    if (!(await canAccessAsset(assetId))) return [];
     return await prisma.assetSpec.findMany({
         where: { assetId },
         include: {
@@ -101,6 +103,7 @@ export async function getAssetSpecs(assetId: string) {
 
 export async function upsertAssetSpec(assetId: string, specTypeId: string, value: string) {
     await ensureAuth(); // Basic check
+    await ensureAssetAccess(assetId);
 
     // Check if it exists
     const existing = await prisma.assetSpec.findUnique({
@@ -132,8 +135,10 @@ export async function upsertAssetSpec(assetId: string, specTypeId: string, value
 
 export async function deleteAssetSpec(id: string, assetId: string) {
     await ensureAuth();
+    await ensureAssetAccess(assetId);
+    // Only delete the spec if it belongs to that asset
     await prisma.assetSpec.delete({
-        where: { id },
+        where: { id, assetId },
     });
     revalidatePath(`/dashboard/asset/${assetId}`);
 }

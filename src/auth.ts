@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials"
 import type { NextAuthConfig } from "next-auth"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import { clearLoginFailures, getClientIp, isLoginBlocked, recordLoginFailure } from "@/lib/loginRateLimit"
 
 declare module "next-auth" {
     interface User {
@@ -19,18 +20,23 @@ const authConfig = {
                 email: { label: "Email", type: "email" },
                 password: { label: "Password", type: "password" },
             },
-            authorize: async (credentials) => {
+            authorize: async (credentials, request) => {
                 const parsedCredentials = z
                     .object({ email: z.string().email(), password: z.string().min(6) })
                     .safeParse(credentials)
 
                 if (parsedCredentials.success) {
                     const { email, password } = parsedCredentials.data
-                    const user = await prisma.user.findUnique({ where: { email } }) as any
-                    if (!user || !user.password) return null
+                    const ip = getClientIp(request as Request | undefined)
+                    if (isLoginBlocked(email, ip)) return null
 
-                    const passwordsMatch = await bcrypt.compare(password, user.password)
-                    if (passwordsMatch) return user
+                    const user = await prisma.user.findUnique({ where: { email } }) as any
+                    const passwordsMatch = !!user?.password && await bcrypt.compare(password, user.password)
+                    if (passwordsMatch) {
+                        clearLoginFailures(email)
+                        return user
+                    }
+                    recordLoginFailure(email, ip)
                 }
                 return null
             },
@@ -52,6 +58,18 @@ const authConfig = {
         async jwt({ token, user }) {
             if (user) {
                 token.role = (user as any).role;
+                return token;
+            }
+            // On the Node.js server (pages and server actions), re-read the user so that a
+            // deleted user loses access and a role change applies right away. The edge
+            // middleware can't use Prisma, so it keeps the token as is.
+            if (process.env.NEXT_RUNTIME !== "edge" && token.sub) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: token.sub },
+                    select: { role: true },
+                });
+                if (!dbUser) return null;
+                token.role = dbUser.role;
             }
             return token;
         }

@@ -49,3 +49,34 @@ export async function ensurePermission(action: PermissionAction, resource: Permi
         throw new Error(`Permission Denied: You do not have permission to ${action} ${resource}s.`);
     }
 }
+
+/**
+ * Whether the current user may see an asset and its records: admins, the owner,
+ * and users the asset is shared with.
+ */
+export async function canAccessAsset(assetId: string) {
+    const session = await auth();
+    const user = session?.user as any;
+    if (!user?.id) return false;
+    if (user.role === "ADMIN") return true;
+
+    const count = await prisma.asset.count({
+        where: {
+            id: assetId,
+            OR: [
+                { userId: user.id },
+                { sharedWith: { some: { userId: user.id } } },
+            ],
+        },
+    });
+    return count > 0;
+}
+
+/**
+ * Throws unless the current user may access the asset.
+ */
+export async function ensureAssetAccess(assetId: string) {
+    if (!(await canAccessAsset(assetId))) {
+        throw new Error("Unauthorized: you do not have access to this asset");
+    }
+}

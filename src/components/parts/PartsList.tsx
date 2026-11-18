@@ -27,8 +27,10 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this part?")) return;
         try {
-            await deletePart(id);
-            toast.success("Part deleted");
+            const result = await deletePart(id);
+            toast.success(result.deactivated
+                ? "Part is used in service or purchase history, so it was deactivated instead"
+                : "Part deleted");
         } catch (error) {
             toast.error("Failed to delete part");
         }
