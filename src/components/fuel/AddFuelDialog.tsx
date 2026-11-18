@@ -27,6 +27,7 @@ import { Fuel, Plus, AlertTriangle } from "lucide-react";
 import { createFuelRecord, updateFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatUtcDate, todayInputValue } from "@/lib/utils";
 
 const fuelSchema = z.object({
     date: z.string(),
@@ -63,7 +64,7 @@ export function AddFuelDialog({ assetId, trackingMethod, lastUsage, avgMpg, trig
     const form = useForm<FuelFormValues>({
         resolver: zodResolver(fuelSchema) as any,
         values: {
-            date: fuelRecord ? new Date(fuelRecord.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            date: fuelRecord ? formatUtcDate(fuelRecord.date, "yyyy-MM-dd") : todayInputValue(),
             usageAtFill: fuelRecord?.usageAtFill ?? (lastUsage || 0),
             gallons: fuelRecord?.gallons ?? 0,
             pricePerGallon: fuelRecord?.pricePerGallon ?? 0,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { canAccessAsset } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getServiceRecords } from "@/lib/actions/service";
 import { ServiceList } from "@/components/service/ServiceList";
@@ -24,7 +25,7 @@ import { SpecList } from "@/components/assets/SpecList";
 import { AssetPartsList } from "@/components/assets/AssetPartsList";
 import { getInventorySystems } from "@/lib/actions/inventorySystems";
 import { getAssets } from "@/lib/actions/assets";
-import { formatHouseUsage, getDynamicAssetUsage } from "@/lib/utils";
+import { formatHouseUsage, formatUtcDate, getDynamicAssetUsage } from "@/lib/utils";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { Badge } from "@/components/ui/badge";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
@@ -50,7 +51,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         },
     });
 
-    if (!asset) {
+    if (!asset || !(await canAccessAsset(asset.id))) {
         notFound();
     }
 
@@ -163,7 +164,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                                 </div>
                                 <div className="font-medium">
                                     {serviceRecords.length > 0
-                                        ? new Date(serviceRecords[0].date).toLocaleDateString()
+                                        ? formatUtcDate(serviceRecords[0].date)
                                         : "None logged"}
                                 </div>
                             </div>

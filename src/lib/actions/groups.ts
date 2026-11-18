@@ -32,6 +32,7 @@ export async function getGroups() {
 }
 
 export async function createGroup(data: z.infer<typeof GroupSchema>) {
+    data = GroupSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
         throw new Error("Unauthorized");
@@ -46,6 +47,7 @@ export async function createGroup(data: z.infer<typeof GroupSchema>) {
 }
 
 export async function updateGroup(groupId: string, data: z.infer<typeof GroupSchema>) {
+    data = GroupSchema.parse(data);
     const session = await auth();
     if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
         throw new Error("Unauthorized");

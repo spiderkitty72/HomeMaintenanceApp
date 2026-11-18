@@ -14,13 +14,14 @@ const PurchaseItemSchema = z.object({
 
 const PurchaseSchema = z.object({
     items: z.array(PurchaseItemSchema).min(1, "At least one item is required"),
-    date: z.coerce.date().default(new Date()),
-    vendor: z.string().optional(),
-    image: z.string().optional(),
+    date: z.coerce.date().default(() => new Date()),
+    vendor: z.string().nullish(),
+    image: z.string().nullish(),
     inventorySystemId: z.string().optional(),
 });
 
 export async function createPartPurchase(data: z.infer<typeof PurchaseSchema>) {
+    data = PurchaseSchema.parse(data);
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) throw new Error("Unauthorized");
@@ -106,9 +107,22 @@ export async function getPartPurchases(partId: string) {
     const session = await auth();
     if (!session?.user?.id) return [];
 
-    // Return line items for this specific part
+    const userId = session.user.id;
+    const isAdmin = (session.user as any).role === "ADMIN";
+
+    // Return line items for this specific part, limited to purchases the user made
+    // or that belong to an inventory system they own or have access to
     return await prisma.partPurchaseItem.findMany({
-        where: { partId },
+        where: isAdmin ? { partId } : {
+            partId,
+            partPurchase: {
+                OR: [
+                    { userId },
+                    { inventorySystem: { userId } },
+                    { inventorySystem: { sharedWith: { some: { userId } } } },
+                ],
+            },
+        },
         include: {
             partPurchase: {
                 include: {
