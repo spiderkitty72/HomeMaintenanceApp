@@ -2,41 +2,56 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import fs from "fs";
-import path from "path";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { BACKUP_SETTING_KEY, createBackup, getBackupDir, getBackupSettings, listBackups, pruneBackups } from "@/lib/backup";
 
 /**
  * Creates a physical backup of the SQLite database file.
  */
 export async function createDatabaseBackup() {
-    const session = await auth();
-    if (session?.user?.role !== "ADMIN") {
-        throw new Error("Unauthorized");
-    }
-
-    // Back up next to the live database (in Docker that's /app/data, which is bind-mounted,
-    // so backups survive container rebuilds). Relative SQLite paths in DATABASE_URL are
-    // resolved by Prisma against the prisma/ folder.
-    const dbFile = (process.env.DATABASE_URL || "file:./dev.db").replace(/^file:/, "").split("?")[0];
-    const dbPath = path.isAbsolute(dbFile) ? dbFile : path.join(process.cwd(), "prisma", dbFile);
-    const backupDir = path.join(path.dirname(dbPath), "backups");
-
-    if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupPath = path.join(backupDir, `dev-backup-${timestamp}.db`);
-
+    await ensureAdmin();
     try {
-        // VACUUM INTO writes a consistent copy even while the app is using the database
-        await prisma.$executeRawUnsafe(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`);
-        return { success: true, path: backupPath };
+        const backup = await createBackup("manual");
+        revalidatePath("/dashboard/admin");
+        return { success: true, name: backup.name };
     } catch (error) {
         console.error("Backup failed:", error);
         throw new Error("Failed to create database backup");
     }
+}
+
+async function ensureAdmin() {
+    const session = await auth();
+    if (session?.user?.role !== "ADMIN") {
+        throw new Error("Unauthorized");
+    }
+}
+
+/** Backup settings and the list of backups on the server, newest first. */
+export async function getBackupOverview() {
+    await ensureAdmin();
+    return { settings: await getBackupSettings(), backups: listBackups(), folder: getBackupDir() };
+}
+
+const BackupSettingsSchema = z.object({
+    enabled: z.boolean(),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM"),
+    keep: z.coerce.number().int().min(1).max(365),
+    timeZone: z.string().max(100).optional(),
+});
+
+export async function saveBackupSettings(input: z.infer<typeof BackupSettingsSchema>) {
+    await ensureAdmin();
+    const settings = BackupSettingsSchema.parse(input);
+    await prisma.systemSetting.upsert({
+        where: { key: BACKUP_SETTING_KEY },
+        update: { value: JSON.stringify(settings) },
+        create: { key: BACKUP_SETTING_KEY, value: JSON.stringify(settings) },
+    });
+    pruneBackups(settings.keep);
+    revalidatePath("/dashboard/admin");
+    return settings;
 }
 
 /**

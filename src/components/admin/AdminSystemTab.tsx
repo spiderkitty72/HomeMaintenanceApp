@@ -2,38 +2,22 @@
 
 import { useState } from "react";
 import {
-    Database,
     Download,
     Upload,
     FileJson,
     AlertTriangle,
-    CheckCircle2,
-    Clock,
-    ShieldAlert
+    CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { createDatabaseBackup, exportDatabaseJSON, importDatabaseJSON } from "@/lib/actions/db";
+import { exportDatabaseJSON, importDatabaseJSON } from "@/lib/actions/db";
+import { BackupsCard } from "@/components/admin/BackupsCard";
 import { AdminEmailSettings } from "@/components/admin/AdminEmailSettings";
 
 export function AdminSystemTab() {
-    const [isBackingUp, setIsBackingUp] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
-
-    const handleBackup = async () => {
-        setIsBackingUp(true);
-        try {
-            await createDatabaseBackup();
-            toast.success("Database backup created successfully on the server.");
-        } catch (error) {
-            toast.error("Failed to create database backup.");
-            console.error(error);
-        } finally {
-            setIsBackingUp(false);
-        }
-    };
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -93,42 +77,9 @@ export function AdminSystemTab() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-amber-200 bg-amber-50/30">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Database className="h-5 w-5 text-amber-600" />
-                        SQLite File Protection
-                    </CardTitle>
-                    <CardDescription>
-                        Directly manage the SQLite database file on the server.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="p-4 bg-white rounded-lg border border-amber-100 space-y-3">
-                        <p className="text-sm text-amber-800 flex items-start gap-2">
-                            <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />
-                            Creating a server-side backup copies your current `dev.db` to a `backups/` folder.
-                        </p>
-                        <Button
-                            onClick={handleBackup}
-                            disabled={isBackingUp}
-                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                        >
-                            {isBackingUp ? (
-                                <>
-                                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                    Creating Backup...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="h-4 w-4 mr-2" />
-                                    System Snapshot (Daily/Manual)
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="md:col-span-2">
+                <BackupsCard />
+            </div>
 
             <Card className="border-blue-200 bg-blue-50/30">
                 <CardHeader>
