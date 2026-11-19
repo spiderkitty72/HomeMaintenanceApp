@@ -342,6 +342,19 @@ export async function getCompatibleParts(assetId: string) {
                             }
                         }
                     }
+                },
+                // Parts stocked in an inventory system the user owns or was given access to
+                {
+                    inventoryItems: {
+                        some: {
+                            inventorySystem: {
+                                OR: [
+                                    { userId: session.user.id },
+                                    { sharedWith: { some: { userId: session.user.id } } }
+                                ]
+                            }
+                        }
+                    }
                 }
             ],
             AND: [
