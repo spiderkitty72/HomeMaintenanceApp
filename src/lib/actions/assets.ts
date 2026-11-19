@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ASSET_TYPES, AssetType, TrackingMethod } from "@/lib/constants";
-import { ensurePermission, checkPermission } from "@/lib/permissions";
+import { ensurePermission, checkPermission, ensureAssetAccess } from "@/lib/permissions";
 import { getHouseAgeDays, recalculateAssetUsage } from "./usage";
 import { withDynamicUsageList } from "@/lib/utils";
+import { sortAssetsForDashboard } from "@/lib/assetSort";
 
 const AssetSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -106,18 +106,42 @@ export async function getAssets() {
                 },
             },
             schedules: true,
-        },
-        orderBy: {
-            createdAt: "desc",
+            favoritedBy: {
+                where: { userId: session.user.id },
+                select: { userId: true },
+            },
         },
     });
 
-    return withDynamicUsageList(assets);
+    const withFavorites = sortAssetsForDashboard(
+        assets.map(({ favoritedBy, ...asset }) => ({ ...asset, isFavorite: favoritedBy.length > 0 }))
+    );
+
+    return withDynamicUsageList(withFavorites);
+}
+
+export async function setAssetFavorite(assetId: string, favorite: boolean) {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) throw new Error("Unauthorized");
+    await ensureAssetAccess(assetId);
+
+    if (favorite) {
+        await prisma.assetFavorite.upsert({
+            where: { userId_assetId: { userId, assetId } },
+            update: {},
+            create: { userId, assetId },
+        });
+    } else {
+        await prisma.assetFavorite.deleteMany({ where: { userId, assetId } });
+    }
+
+    revalidatePath("/dashboard");
 }
 
 export async function getAllAssetsSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -152,7 +176,7 @@ export async function getAllAssetsSystem() {
 
 export async function updateAssetAccess(id: string, ownerId: string, sharedUserIds: string[]) {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -200,7 +224,7 @@ export async function deleteAsset(id: string) {
 
     if (!asset) throw new Error("Asset not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     if (!isAdmin && asset.userId !== session.user.id) {
         throw new Error("Unauthorized to delete this asset");
     }
@@ -225,7 +249,7 @@ export async function updateAsset(id: string, data: z.infer<typeof AssetSchema>)
         where: { id },
     });
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existingAsset?.userId === session.user.id;
     const hasPermission = await checkPermission("EDIT", "ASSET");
 
@@ -315,7 +339,7 @@ export async function toggleAssetArchived(id: string, isArchived: boolean) {
         where: { id },
     });
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existingAsset?.userId === session.user.id;
 
     if (!existingAsset || (!isOwner && !isAdmin)) {

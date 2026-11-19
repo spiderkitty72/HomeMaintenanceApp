@@ -8,13 +8,9 @@ import { AddPartDialog } from "@/components/parts/AddPartDialog";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { InventorySystemSelect } from "@/components/parts/InventorySystemSelect";
+import { PartStock } from "@/components/parts/PartStock";
+import { formatMoney, getPartStock, getPartUnitCost, getSystemItem, NO_SYSTEM } from "@/lib/inventory";
 import {
     Table,
     TableBody,
@@ -33,7 +29,8 @@ interface AssetPartsListProps {
 
 export function AssetPartsList({ parts, assets, assetId, inventorySystems }: AssetPartsListProps) {
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || "none");
+    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || NO_SYSTEM);
+    const selectedSystemName = inventorySystems.find((s) => s.id === selectedSystemId)?.name;
 
     const filteredAndSortedParts = parts
         .filter((part) => {
@@ -74,17 +71,7 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                     className="max-w-md"
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                    <Select value={selectedSystemId} onValueChange={setSelectedSystemId}>
-                        <SelectTrigger className="w-[180px] bg-background">
-                            <SelectValue placeholder="System" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {inventorySystems.length === 0 && <SelectItem value="none">No Systems</SelectItem>}
-                            {inventorySystems.map(system => (
-                                <SelectItem key={system.id} value={system.id}>{system.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <InventorySystemSelect systems={inventorySystems} value={selectedSystemId} onChange={setSelectedSystemId} />
                     <AddPartDialog assets={assets} preselectedAssetId={assetId} />
                     <Link href="/dashboard/parts">
                         <Button variant="outline" size="sm" className="hidden sm:flex">
@@ -115,12 +102,7 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                         ) : (
                                             <Package className="h-5 w-5 text-muted-foreground/50" />
                                         )}
-                                        {(() => {
-                                            const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                            const stock = systemItem?.quantityOnHand ?? 0;
-                                            if (stock <= 0) return <AlertCircle className="h-4 w-4 text-destructive" />;
-                                            return null;
-                                        })()}
+                                        {getSystemItem(part, selectedSystemId) && getPartStock(part, selectedSystemId) <= 0 && <AlertCircle className="h-4 w-4 text-destructive absolute -top-1.5 -right-1.5 bg-background rounded-full" />}
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-sm leading-tight">{part.name}</h4>
@@ -135,31 +117,10 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                             </div>
                             <div className="flex justify-between items-center pt-3 border-t border-muted text-sm">
                                 <div className="flex items-center gap-1.5">
-                                    {(() => {
-                                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                        const stock = systemItem?.quantityOnHand ?? 0;
-                                        const isTracked = !!systemItem;
-
-                                        if (!isTracked && selectedSystemId !== "none") {
-                                            return <span className="text-muted-foreground text-[10px] italic">Not tracked</span>;
-                                        }
-
-                                        return (
-                                            <>
-                                                <span className={`font-bold ${stock > 0 ? 'text-foreground' : 'text-destructive'}`}>
-                                                    {stock}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground uppercase">{part.unitOfMeasure}</span>
-                                            </>
-                                        );
-                                    })()}
+                                    <PartStock part={part} systemId={selectedSystemId} systemName={selectedSystemName} />
                                 </div>
                                 <div className="font-mono font-bold">
-                                    {(() => {
-                                        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                        const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
-                                        return `$${price.toFixed(2)}`;
-                                    })()}
+                                    {formatMoney(getPartUnitCost(part, selectedSystemId))}
                                 </div>
                             </div>
                         </div>
@@ -201,12 +162,7 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                             ) : (
                                                 <Package className="h-4 w-4 text-muted-foreground/50" />
                                             )}
-                                            {(() => {
-                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                                const stock = systemItem?.quantityOnHand ?? 0;
-                                                if (stock <= 0) return <AlertCircle className="h-4 w-4 text-destructive" />;
-                                                return null;
-                                            })()}
+                                            {getSystemItem(part, selectedSystemId) && getPartStock(part, selectedSystemId) <= 0 && <AlertCircle className="h-4 w-4 text-destructive absolute -top-1.5 -right-1.5 bg-background rounded-full" />}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -225,35 +181,12 @@ export function AssetPartsList({ parts, assets, assetId, inventorySystems }: Ass
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-xs font-mono text-muted-foreground">
-                                            {(() => {
-                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                                const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
-                                                return `$${price.toFixed(2)}`;
-                                            })()} / {part.unitOfMeasure}
+                                            {formatMoney(getPartUnitCost(part, selectedSystemId))} / {part.unitOfMeasure}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1.5">
-                                            {(() => {
-                                                const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                                const stock = systemItem?.quantityOnHand ?? 0;
-                                                const isTracked = !!systemItem;
-
-                                                if (!isTracked && selectedSystemId !== "none") {
-                                                    return <span className="text-muted-foreground text-[10px] italic">Not tracked</span>;
-                                                }
-
-                                                return (
-                                                    <>
-                                                        <span className={`text-sm font-bold ${stock > 0 ? 'text-foreground' : 'text-destructive font-black'}`}>
-                                                            {stock}
-                                                        </span>
-                                                        <span className="text-[10px] text-muted-foreground uppercase font-medium mt-1">
-                                                            {part.unitOfMeasure}
-                                                        </span>
-                                                    </>
-                                                );
-                                            })()}
+                                            <PartStock part={part} systemId={selectedSystemId} systemName={selectedSystemName} />
                                         </div>
                                     </TableCell>
                                     <TableCell>

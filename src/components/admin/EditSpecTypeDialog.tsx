@@ -29,7 +29,7 @@ export function EditSpecTypeDialog({ specType }: EditSpecTypeDialogProps) {
             await updateSpecType(specType.id, name, unit || null);
             toast.success("Specification type updated successfully");
             setOpen(false);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update specification type");
         } finally {
             setIsPending(false);

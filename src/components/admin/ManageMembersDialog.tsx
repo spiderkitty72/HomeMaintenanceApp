@@ -37,7 +37,7 @@ export function ManageMembersDialog({ groupId, groupName, members, allUsers }: M
         try {
             await addMemberToGroup(groupId, userId);
             toast.success("Member added");
-        } catch (error) {
+        } catch {
             toast.error("Failed to add member");
         }
     };
@@ -46,7 +46,7 @@ export function ManageMembersDialog({ groupId, groupName, members, allUsers }: M
         try {
             await removeMemberFromGroup(groupId, userId);
             toast.success("Member removed");
-        } catch (error) {
+        } catch {
             toast.error("Failed to remove member");
         }
     };
@@ -117,7 +117,7 @@ export function ManageMembersDialog({ groupId, groupName, members, allUsers }: M
                             </div>
                         ) : (
                             <div className="p-8 text-center text-muted-foreground text-sm italic">
-                                No users found matching "{searchTerm}"
+                                No users found matching &quot;{searchTerm}&quot;
                             </div>
                         )}
                     </div>

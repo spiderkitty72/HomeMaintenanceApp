@@ -9,7 +9,6 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Fingerprint } from "lucide-react";
 import { setGroupPermissions } from "@/lib/actions/groups";
@@ -50,7 +49,7 @@ export function PermissionsDialog({ groupId, groupName, existingPermissions }: P
             await setGroupPermissions(groupId, permissionData);
             toast.success("Permissions updated");
             setOpen(false);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update permissions");
         } finally {
             setLoading(false);

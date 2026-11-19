@@ -42,7 +42,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
     const router = useRouter();
     let userPreferences: any = {};
     if (user.preferences) {
-        try { userPreferences = JSON.parse(user.preferences); } catch (e) {}
+        try { userPreferences = JSON.parse(user.preferences); } catch {}
     }
 
     const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -69,8 +69,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
             await updateSelf(values);
             toast.success("Profile updated successfully");
             router.refresh();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update profile");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update profile");
         }
     }
 
@@ -82,8 +82,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
             });
             toast.success("Password changed successfully");
             passwordForm.reset();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to change password");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to change password");
         }
     }
 
@@ -205,7 +205,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
                     <CardHeader>
                         <CardTitle>Security</CardTitle>
                         <CardDescription>
-                            Change your password. We recommend using a strong password that you don't use elsewhere.
+                            Change your password. We recommend using a strong password that you don&apos;t use elsewhere.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

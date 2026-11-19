@@ -60,8 +60,8 @@ export function AddUserDialog() {
             toast.success("User created successfully");
             setOpen(false);
             form.reset();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to create user");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to create user");
         }
     }
 

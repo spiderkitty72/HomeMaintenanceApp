@@ -1,4 +1,4 @@
-import { FuelRecord, ServiceSchedule, Asset } from "@prisma/client";
+import { FuelRecord, ServiceSchedule } from "@prisma/client";
 import { addDays, differenceInDays } from "date-fns";
 
 /**

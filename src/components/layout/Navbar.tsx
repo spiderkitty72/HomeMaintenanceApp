@@ -1,91 +1,40 @@
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Wrench, LayoutDashboard, Package, ShieldCheck, Settings, Bug, FileText } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { MobileNav } from "./MobileNav";
+import { DesktopNav } from "./DesktopNav";
+import { SettingsMenu } from "./SettingsMenu";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AboutDialog } from "./AboutDialog";
 
 export async function Navbar() {
     const session = await auth();
-
-    const NavItems = () => (
-        <>
-            <Link href="/dashboard" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
-                <LayoutDashboard className="h-4 w-4 md:hidden" />
-                <span>Dashboard</span>
-            </Link>
-            <Link href="/dashboard/parts" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
-                <Package className="h-4 w-4 md:hidden" />
-                <span>Parts</span>
-            </Link>
-            <Link href="/dashboard/invoices" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
-                <FileText className="h-4 w-4 md:hidden" />
-                <span>Invoices</span>
-            </Link>
-            {session && (session.user as any).role === "ADMIN" && (
-                <Link href="/dashboard/admin" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
-                    <ShieldCheck className="h-4 w-4 md:hidden" />
-                    <span>Admin</span>
-                </Link>
-            )}
-            <a
-                href="https://github.com/spiderkitty72/HomeMaintenanceApp/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-                <Bug className="h-4 w-4 md:hidden" />
-                <span>Report Bug</span>
-            </a>
-            <div className="flex items-center">
-                <AboutDialog />
-            </div>
-            <Link href="/dashboard/settings" className="flex items-center space-x-2 text-sm font-medium hover:text-primary transition-colors">
-                <Settings className="h-4 w-4 md:hidden" />
-                <span>Settings</span>
-            </Link>
-        </>
-    );
+    const isAdmin = session?.user?.role === "ADMIN";
 
     return (
         <nav className="border-b bg-card sticky top-0 z-50">
-            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                <Link href="/" className="flex items-center space-x-2">
-                    <Wrench className="h-6 w-6 text-primary" />
-                    <span className="font-bold text-xl tracking-tight">MaintenanceApp</span>
-                </Link>
+            <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                        <Wrench className="h-6 w-6 text-primary" />
+                        <span className="font-bold text-xl tracking-tight">MaintenanceApp</span>
+                    </Link>
+                    {session && <DesktopNav isAdmin={isAdmin} />}
+                </div>
 
-                <div className="flex items-center space-x-1 sm:space-x-4">
-                    {/* Desktop Navigation (Session Required) */}
-                    {session && (
-                        <div className="hidden md:flex items-center space-x-6">
-                            <NavItems />
-                            <form
-                                action={async () => {
-                                    "use server";
-                                    await signOut();
-                                }}
-                            >
-                                <Button variant="ghost" size="sm">
-                                    Sign Out
-                                </Button>
-                            </form>
-                        </div>
-                    )}
-
+                <div className="flex items-center gap-1">
                     {!session && (
+                        <Link href="/login" className="hidden md:block">
+                            <Button size="sm">Sign In</Button>
+                        </Link>
+                    )}
+                    <ThemeToggle />
+                    {session && (
                         <div className="hidden md:block">
-                            <Link href="/api/auth/signin">
-                                <Button size="sm">Sign In</Button>
-                            </Link>
+                            <SettingsMenu userName={session.user?.name ?? session.user?.email} />
                         </div>
                     )}
-
-                    <ThemeToggle />
-
-                    {/* Mobile Navigation */}
-                    <MobileNav session={session} />
+                    <MobileNav isSignedIn={!!session} isAdmin={isAdmin} />
                 </div>
             </div>
         </nav>

@@ -44,10 +44,12 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 
 # Expose port
 EXPOSE 3000
 
 # Start the application
 # Note: In production, we run migrations before starting
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm start"]
+# Before migrating, back up the database if any migration is pending (saved to /app/data/backups)
+CMD ["sh", "-c", "node scripts/backup-before-migrate.js; npx prisma migrate deploy && npx prisma db seed && npm start"]

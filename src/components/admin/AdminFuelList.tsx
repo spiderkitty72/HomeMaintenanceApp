@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AddFuelDialog } from "@/components/fuel/AddFuelDialog";
 import { deleteFuelRecord } from "@/lib/actions/fuel";
 import { toast } from "sonner";
-import { Fuel, Trash2, Search, Calendar, User, Edit2 } from "lucide-react";
+import { Trash2, Search, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatUtcDate } from "@/lib/utils";
 
@@ -37,8 +37,8 @@ export function AdminFuelList({ records }: AdminFuelListProps) {
         try {
             await deleteFuelRecord(id);
             toast.success("Fuel record deleted");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete record");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to delete record");
         }
     };
 

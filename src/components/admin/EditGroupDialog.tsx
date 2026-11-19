@@ -56,8 +56,8 @@ export function EditGroupDialog({ group }: EditGroupDialogProps) {
             await updateGroup(group.id, values);
             toast.success("Group updated successfully");
             setOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update group");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update group");
         }
     }
 
@@ -67,8 +67,8 @@ export function EditGroupDialog({ group }: EditGroupDialogProps) {
             await deleteGroup(group.id);
             toast.success("Group deleted");
             setOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete group");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to delete group");
         }
     };
 

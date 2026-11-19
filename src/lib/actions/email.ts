@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 
 async function ensureAdmin() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 }
@@ -33,9 +33,9 @@ export async function testSmtpConnection(testEmailAddress: string) {
         });
 
         return { success: true, messageId: info.messageId };
-    } catch (error: any) {
+    } catch (error) {
         console.error("SMTP_TEST_ERROR:", error);
-        throw new Error(error.message || "Failed to send test email. Check your SMTP settings and ensure the mail server is accessible.");
+        throw new Error((error as Error).message || "Failed to send test email. Check your SMTP settings and ensure the mail server is accessible.");
     }
 }
 

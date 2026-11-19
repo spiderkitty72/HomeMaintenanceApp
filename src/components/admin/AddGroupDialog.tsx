@@ -49,8 +49,8 @@ export function AddGroupDialog() {
             toast.success("Group created successfully");
             setOpen(false);
             form.reset();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to create group");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to create group");
         }
     }
 

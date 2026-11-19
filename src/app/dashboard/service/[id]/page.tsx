@@ -38,7 +38,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         notFound();
     }
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = record.asset.userId === session.user?.id;
     const isShared = record.asset.sharedWith.some((share: any) => share.userId === session.user?.id);
     const hasEditPermission = await checkPermission("EDIT", "SERVICE");

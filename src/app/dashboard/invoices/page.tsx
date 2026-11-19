@@ -63,7 +63,7 @@ export default async function InvoicesPage() {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-                <p className="text-muted-foreground mt-1">Invoices you've sent and received for parts used in service records.</p>
+                <p className="text-muted-foreground mt-1">Invoices you&apos;ve sent and received for parts used in service records.</p>
             </div>
 
             <Tabs defaultValue="sent">

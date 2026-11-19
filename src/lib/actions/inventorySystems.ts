@@ -27,7 +27,7 @@ export async function getSystemAccessLevel(systemId: string): Promise<"OWNER" | 
   });
 
   if (!system) return null;
-  if (system.userId === userId || (session.user as any).role === "ADMIN") return "OWNER";
+  if (system.userId === userId || session.user.role === "ADMIN") return "OWNER";
 
   const access = system.sharedWith.find((a) => a.userId === userId);
   if (!access) return null;
@@ -37,7 +37,7 @@ export async function getSystemAccessLevel(systemId: string): Promise<"OWNER" | 
 export async function createInventorySystem(data: z.infer<typeof InventorySystemSchema>) {
   data = InventorySystemSchema.parse(data);
   const session = await auth();
-  if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
     throw new Error("Unauthorized");
   }
 
@@ -93,7 +93,7 @@ export async function getInventorySystems() {
 
 export async function getAllInventorySystems() {
   const session = await auth();
-  if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
     throw new Error("Unauthorized");
   }
 
@@ -120,7 +120,7 @@ export async function updateInventorySystem(
   const existing = await prisma.inventorySystem.findUnique({ where: { id } });
   if (!existing) throw new Error("Inventory system not found");
 
-  const isAdmin = (session.user as any).role === "ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   const isOwner = existing.userId === session.user.id;
   if (!isAdmin && !isOwner) throw new Error("Unauthorized");
 
@@ -146,7 +146,7 @@ export async function updateInventorySystem(
 
 export async function deleteInventorySystem(id: string) {
   const session = await auth();
-  if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
     throw new Error("Unauthorized");
   }
 
@@ -216,7 +216,7 @@ export async function removePartFromSystem(systemId: string, partId: string) {
 
     revalidatePath("/dashboard/parts");
     revalidatePath("/dashboard/admin");
-  } catch (error: any) {
+  } catch (error) {
     console.error(`[removePartFromSystem] ERROR:`, error);
     throw error;
   }

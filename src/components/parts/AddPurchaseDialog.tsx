@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -62,10 +62,12 @@ export function AddPurchaseDialog({ parts, assets = [], inventorySystems }: AddP
     const [open, setOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localParts, setLocalParts] = useState(parts);
-
-    useEffect(() => {
+    const [prevParts, setPrevParts] = useState(parts);
+    // Pick up a new parts list from the server (adjusting state during render, not in an effect).
+    if (parts !== prevParts) {
+        setPrevParts(parts);
         setLocalParts(parts);
-    }, [parts]);
+    }
 
     const form = useForm<PurchaseFormValues>({
         resolver: zodResolver(purchaseSchema) as any,
@@ -93,8 +95,8 @@ export function AddPurchaseDialog({ parts, assets = [], inventorySystems }: AddP
             toast.success("Purchase logged and inventory updated");
             setOpen(false);
             form.reset();
-        } catch (error: any) {
-            toast.error(error.message || "Something went wrong");
+        } catch (error) {
+            toast.error((error as Error).message || "Something went wrong");
         } finally {
             setIsSubmitting(false);
         }

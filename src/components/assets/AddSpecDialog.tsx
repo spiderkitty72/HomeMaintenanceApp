@@ -25,19 +25,11 @@ export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
     const [newTypeUnit, setNewTypeUnit] = useState("");
 
     useEffect(() => {
-        if (open) {
-            loadSpecTypes();
-        }
+        if (!open) return;
+        getSpecTypes()
+            .then((types) => setSpecTypes(types as any))
+            .catch(() => toast.error("Failed to load specification types"));
     }, [open]);
-
-    async function loadSpecTypes() {
-        try {
-            const types = await getSpecTypes();
-            setSpecTypes(types as any);
-        } catch (error) {
-            toast.error("Failed to load specification types");
-        }
-    }
 
     async function handleAddType() {
         if (!newTypeName) {
@@ -52,7 +44,7 @@ export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
             setNewTypeName("");
             setNewTypeUnit("");
             toast.success("Type added successfully");
-        } catch (error) {
+        } catch {
             toast.error("Failed to add specification type");
         }
     }
@@ -68,7 +60,7 @@ export function AddSpecDialog({ assetId, spec }: AddSpecDialogProps) {
             toast.success("Specification added successfully");
             setOpen(false);
             resetForm();
-        } catch (error) {
+        } catch {
             toast.error("Failed to save specification");
         }
     }

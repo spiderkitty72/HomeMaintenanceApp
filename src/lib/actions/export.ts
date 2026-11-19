@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 
 export async function getExportData() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 

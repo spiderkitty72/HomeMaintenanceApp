@@ -28,7 +28,7 @@ export function EditPurchaseDialog({ purchase }: EditPurchaseDialogProps) {
             });
             toast.success("Purchase updated successfully");
             setOpen(false);
-        } catch (error) {
+        } catch {
             toast.error("Failed to update purchase");
         } finally {
             setIsPending(false);

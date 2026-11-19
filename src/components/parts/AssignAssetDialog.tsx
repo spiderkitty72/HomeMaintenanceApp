@@ -9,11 +9,10 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link as LinkIcon, Trash2, Search, Car, Home, Hammer } from "lucide-react";
+import { Link as LinkIcon, Search, Car, Home, Hammer } from "lucide-react";
 import { assignPartToAsset, unassignPartFromAsset } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 interface AssignAssetDialogProps {
     part: any;
@@ -34,7 +33,7 @@ export function AssignAssetDialog({ part, assets }: AssignAssetDialogProps) {
         try {
             await assignPartToAsset(part.id, assetId);
             toast.success("Part assigned to asset");
-        } catch (error) {
+        } catch {
             toast.error("Failed to assign part");
         }
     };
@@ -43,7 +42,7 @@ export function AssignAssetDialog({ part, assets }: AssignAssetDialogProps) {
         try {
             await unassignPartFromAsset(part.id, assetId);
             toast.success("Assignment removed");
-        } catch (error) {
+        } catch {
             toast.error("Failed to remove assignment");
         }
     };

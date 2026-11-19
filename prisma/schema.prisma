@@ -53,6 +53,8 @@ model User {
   sessions      Session[]
   assets        Asset[]
   sharedAssets  AssetShare[]
+  favoriteAssets AssetFavorite[]
+  pushSubscriptions PushSubscription[]
   parts         Part[]
   groups        GroupMember[]
   partPurchases PartPurchase[]
@@ -125,6 +127,7 @@ model Asset {
   
   owner          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   sharedWith     AssetShare[]
+  favoritedBy    AssetFavorite[]
   
   serviceRecords ServiceRecord[]
   fuelRecords    FuelRecord[]
@@ -159,6 +162,31 @@ model AssetSpec {
   @@unique([assetId, specTypeId])
 }
 
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AssetFavorite {
+  userId    String
+  assetId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([userId, assetId])
+}
+
 model AssetShare {
   id         String @id @default(cuid())
   assetId    String
@@ -182,6 +210,7 @@ model Part {
   unitOfMeasure  String  @default("pcs") // pcs, quarts, pkg, etc
   isActive       Boolean @default(true)
   image          String?
+  quantityOnHand Float   @default(0) // Legacy stock from before inventory systems. Not used by the app; kept so no data is lost.
   
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   serviceParts   ServicePart[]

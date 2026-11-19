@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -107,8 +107,8 @@ export function AdminEmailSettings() {
         try {
             await setSystemSetting("smtp_config", values);
             toast.success("SMTP Settings saved successfully");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to save settings");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to save settings");
         }
     }
 
@@ -120,8 +120,8 @@ export function AdminEmailSettings() {
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Day and time are in the admin's local time zone
             });
             toast.success("Reminder Schedule saved successfully");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to save schedule");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to save schedule");
         }
     }
 
@@ -135,8 +135,8 @@ export function AdminEmailSettings() {
         try {
             await testSmtpConnection(testEmail);
             toast.success("Test email sent! Please check your inbox.");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to send test email.");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to send test email.");
         } finally {
             setIsTesting(false);
         }
@@ -147,12 +147,12 @@ export function AdminEmailSettings() {
         try {
             const result = await triggerManualReminders();
             if (result.success) {
-                toast.success(`Successfully ran reminders. Sent ${result.emailsSent} email(s).`);
+                toast.success(`Ran reminders: sent ${result.emailsSent} email(s) and notified ${result.pushesSent ?? 0} user(s) by push.`);
             } else {
                 toast.error(`Error running reminders: ${result.error}`);
             }
-        } catch (error: any) {
-            toast.error(error.message || "Failed to trigger reminders.");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to trigger reminders.");
         } finally {
             setIsTriggering(false);
         }
@@ -244,7 +244,7 @@ export function AdminEmailSettings() {
                                 name="fromAddress"
                                 render={({ field }) => (
                                     <FormItem className="md:col-span-2">
-                                        <FormLabel>Default "From" Address</FormLabel>
+                                        <FormLabel>Default &quot;From&quot; Address</FormLabel>
                                         <FormControl>
                                             <Input placeholder="noreply@mycompany.com" {...field} />
                                         </FormControl>

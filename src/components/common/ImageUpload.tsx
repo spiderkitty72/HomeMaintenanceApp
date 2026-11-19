@@ -54,7 +54,7 @@ export function ImageUpload({ onUpload, value, label, disabled, accept = "image/
             const data = await res.json();
             onUpload(data.url);
             toast.success("File uploaded successfully");
-        } catch (error) {
+        } catch {
             toast.error("Failed to upload file");
         } finally {
             setLoading(false);

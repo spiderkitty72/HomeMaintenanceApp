@@ -28,7 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Settings2, KeyRound, Lock, UserCog } from "lucide-react";
+import { Settings2, KeyRound } from "lucide-react";
 import { updateUser, adminResetPassword } from "@/lib/actions/users";
 import { toast } from "sonner";
 
@@ -74,8 +74,8 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             await adminResetPassword(user.id, newPassword);
             toast.success("Password reset successfully");
             setNewPassword("");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to reset password");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to reset password");
         } finally {
             setIsResetting(false);
         }
@@ -86,8 +86,8 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             await updateUser(user.id, values);
             toast.success("User updated successfully");
             setOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to update user");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to update user");
         }
     }
 
@@ -165,7 +165,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
                         <h3 className="text-sm font-semibold">Administrative Reset</h3>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Reset this user's password. They will need to use this new password for their next sign-in.
+                        Reset this user&apos;s password. They will need to use this new password for their next sign-in.
                     </p>
                     <div className="flex space-x-2">
                         <Input

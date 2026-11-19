@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AddServiceDialog } from "@/components/service/AddServiceDialog";
 import { deleteServiceRecord } from "@/lib/actions/service";
 import { toast } from "sonner";
-import { Wrench, Trash2, Search, Calendar, User, Hammer, Edit2 } from "lucide-react";
+import { Trash2, Search, Hammer, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatUtcDate } from "@/lib/utils";
 
@@ -38,8 +38,8 @@ export function AdminServiceList({ records }: AdminServiceListProps) {
         try {
             await deleteServiceRecord(id);
             toast.success("Service record deleted");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete record");
+        } catch (error) {
+            toast.error((error as Error).message || "Failed to delete record");
         }
     };
 

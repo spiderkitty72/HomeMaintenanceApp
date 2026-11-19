@@ -2,6 +2,39 @@ export function register() {
     if (process.env.NEXT_RUNTIME === "nodejs") {
         console.log("Starting Maintenance App Background Scheduler...");
 
+        // Defined inside the Node.js-only branch so the edge build never bundles the fs-based backup code.
+        /** Daily database backup at the configured time (on by default, 03:00), once per day. */
+        const runScheduledBackup = async () => {
+            try {
+                const { prisma } = await import("./lib/prisma");
+                const { createBackup, getBackupSettings, LAST_BACKUP_KEY } = await import("./lib/backup");
+
+                const settings = await getBackupSettings();
+                if (!settings.enabled) return;
+
+                const { time, date } = getZonedNow(settings.timeZone);
+                if (time < normalizeTime(settings.time)) return;
+
+                const lastRun = await prisma.systemSetting.findUnique({ where: { key: LAST_BACKUP_KEY } });
+                if (lastRun?.value === date) return;
+
+                // Mark first so a slow backup isn't started twice by the next tick
+                await prisma.systemSetting.upsert({
+                    where: { key: LAST_BACKUP_KEY },
+                    update: { value: date },
+                    create: { key: LAST_BACKUP_KEY, value: date },
+                });
+                const backup = await createBackup("daily");
+                console.log(`Daily database backup saved: ${backup.name}`);
+            } catch (error) {
+                console.error("Scheduled backup failed:", error);
+            }
+        };
+
+        setInterval(() => {
+            void runScheduledBackup();
+        }, 60000);
+
         setInterval(async () => {
             try {
                 // Dynamically import to prevent Webpack from failing in the Edge runtime

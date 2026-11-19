@@ -156,7 +156,7 @@ export async function getFuelRecord(id: string) {
 
 export async function getAllFuelRecordsSystem() {
     const session = await auth();
-    if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
         throw new Error("Unauthorized");
     }
 
@@ -193,7 +193,7 @@ export async function updateFuelRecord(id: string, data: z.infer<typeof FuelReco
 
     if (!existing) throw new Error("Record not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.asset.userId === session.user.id;
     const hasPermission = await checkPermission("EDIT", "FUEL");
 
@@ -257,7 +257,7 @@ export async function deleteFuelRecord(id: string) {
 
     if (!existing) throw new Error("Record not found");
 
-    const isAdmin = (session.user as any).role === "ADMIN";
+    const isAdmin = session.user.role === "ADMIN";
     const isOwner = existing.asset.userId === session.user.id;
     const hasPermission = await checkPermission("DELETE", "FUEL");
 

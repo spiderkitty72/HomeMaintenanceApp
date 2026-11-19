@@ -118,8 +118,8 @@ export function AddPartDialog({ mode = "add", part, assets, preselectedAssetId, 
             }
             setOpen(false);
             if (mode === "add") form.reset();
-        } catch (error: any) {
-            toast.error(error.message || "Something went wrong");
+        } catch (error) {
+            toast.error((error as Error).message || "Something went wrong");
         }
     }
 

@@ -134,6 +134,29 @@ labels:
 
 Traefik forwards the standard `X-Forwarded-*` headers by default.
 
+## Backups
+
+The database is backed up automatically to `./data/backups` on the host (`/app/data/backups` in the container). That folder is ignored by git, so backups never end up in version control.
+
+- **Daily**: once a day at the time set in **Admin › System › Database backups** (03:00 by default). The newest 30 daily and manual backups are kept; older ones are deleted.
+- **Before updates**: when the container starts and a database migration is about to run, a `-pre-migrate` copy is saved first. These are never deleted automatically.
+- **On demand**: the **Back up now** button in the same card.
+
+Each file is a complete SQLite database named with its date and time, for example `maintenance-2026-11-19_030000-daily.db`. Backups can be downloaded from the card so you can keep copies off the server too.
+
+### Restoring a backup
+
+1. Stop the app: `docker-compose down`
+2. Keep the current database aside, in case you want it back:
+   ```bash
+   mv data/dev.db data/dev.db.before-restore
+   ```
+3. Copy the backup you want into place:
+   ```bash
+   cp data/backups/maintenance-2026-11-19_030000-daily.db data/dev.db
+   ```
+4. Start the app again: `docker-compose up -d`. If the backup is from an older version, the pending migrations run on start and bring it up to date without losing its data.
+
 ## Notes
 
 - SMTP settings for the maintenance-reminder emails are configured in-app (System Settings), not via environment variables.

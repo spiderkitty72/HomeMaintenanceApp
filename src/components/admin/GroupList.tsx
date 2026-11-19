@@ -1,9 +1,8 @@
 "use client";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Settings, UserPlus, Fingerprint, Settings2 } from "lucide-react";
+import { Users } from "lucide-react";
 import { PermissionsDialog } from "./PermissionsDialog";
 import { EditGroupDialog } from "./EditGroupDialog";
 import { ManageMembersDialog } from "./ManageMembersDialog";

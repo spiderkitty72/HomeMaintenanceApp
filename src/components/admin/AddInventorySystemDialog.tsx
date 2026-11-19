@@ -125,8 +125,8 @@ export function AddInventorySystemDialog({ mode = "add", system, users }: AddInv
         form.reset();
         setSharedUsers([]);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Something went wrong");
+    } catch (error) {
+      toast.error((error as Error).message || "Something went wrong");
     } finally {
       setLoading(false);
     }

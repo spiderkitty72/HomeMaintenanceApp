@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { User } from "lucide-react";
 import { SettingsForm } from "@/components/settings/SettingsForm";
+import { PushNotificationsCard } from "@/components/settings/PushNotificationsCard";
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -36,6 +37,8 @@ export default async function SettingsPage() {
             </div>
 
             <SettingsForm user={user} />
+
+            <PushNotificationsCard />
         </div>
     );
 }

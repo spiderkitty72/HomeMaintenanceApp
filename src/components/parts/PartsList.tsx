@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { InventorySystemSelect } from "@/components/parts/InventorySystemSelect";
+import { PartStock } from "@/components/parts/PartStock";
+import { formatMoney, getPartStock, getPartUnitCost, NO_SYSTEM } from "@/lib/inventory";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Trash2, Search, Filter } from "lucide-react";
+import { Package, Trash2, Search } from "lucide-react";
 import { deletePart } from "@/lib/actions/parts";
 import { toast } from "sonner";
 import { AddPartDialog } from "@/components/parts/AddPartDialog";
@@ -22,7 +25,8 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [assetFilter, setAssetFilter] = useState<string>("ALL");
     const [stockFilter, setStockFilter] = useState<string>("ALL");
-    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || "none");
+    const [selectedSystemId, setSelectedSystemId] = useState<string>(inventorySystems[0]?.id || NO_SYSTEM);
+    const selectedSystemName = inventorySystems.find((s) => s.id === selectedSystemId)?.name;
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this part?")) return;
@@ -31,7 +35,7 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
             toast.success(result.deactivated
                 ? "Part is used in service or purchase history, so it was deactivated instead"
                 : "Part deleted");
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete part");
         }
     };
@@ -50,8 +54,7 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
             if (!isAssigned) return false;
         }
 
-        const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-        const stock = systemItem?.quantityOnHand ?? 0;
+        const stock = getPartStock(part, selectedSystemId);
 
         if (stockFilter === "IN_STOCK" && stock <= 0) return false;
         if (stockFilter === "OUT_OF_STOCK" && stock > 0) return false;
@@ -72,17 +75,7 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
                     />
                 </div>
                 <div className="flex flex-wrap gap-3 sm:w-auto">
-                    <Select value={selectedSystemId} onValueChange={setSelectedSystemId}>
-                        <SelectTrigger className="w-[180px] bg-background">
-                            <SelectValue placeholder="Inventory System" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {inventorySystems.length === 0 && <SelectItem value="none">No Systems</SelectItem>}
-                            {inventorySystems.map(system => (
-                                <SelectItem key={system.id} value={system.id}>{system.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <InventorySystemSelect systems={inventorySystems} value={selectedSystemId} onChange={setSelectedSystemId} />
 
                     <Select value={assetFilter} onValueChange={setAssetFilter}>
                         <SelectTrigger className="w-[160px] bg-background">
@@ -172,33 +165,10 @@ export function PartsList({ parts, assets, inventorySystems }: PartsListProps) {
                                 </div>
                             </TableCell>
                             <TableCell>
-                                {(() => {
-                                    const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                    const stock = systemItem?.quantityOnHand ?? 0;
-                                    const isTracked = !!systemItem;
-
-                                    if (!isTracked && selectedSystemId !== "none") {
-                                        return <span className="text-muted-foreground text-xs italic">Not tracked</span>;
-                                    }
-
-                                    return (
-                                        <div className="space-y-1">
-                                            <div className="text-sm font-medium">
-                                                {stock} {part.unitOfMeasure}
-                                            </div>
-                                            {stock <= 0 && isTracked && (
-                                                <div className="text-[10px] text-destructive font-bold uppercase">Out of Stock</div>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
+                                <PartStock part={part} systemId={selectedSystemId} systemName={selectedSystemName} />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                {(() => {
-                                    const systemItem = part.inventoryItems?.find((i: any) => i.inventorySystemId === selectedSystemId);
-                                    const price = systemItem?.unitCost ?? part.defaultCost ?? 0;
-                                    return `$${price.toFixed(2)}`;
-                                })()}
+                                {formatMoney(getPartUnitCost(part, selectedSystemId))}
                             </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex justify-end gap-1">
