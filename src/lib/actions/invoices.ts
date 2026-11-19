@@ -3,11 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-
-async function nextInvoiceNumber(fromUserId: string): Promise<string> {
-    const count = await prisma.invoice.count({ where: { fromUserId } });
-    return `INV-${String(count + 1).padStart(4, "0")}`;
-}
+import { nextInvoiceNumber } from "@/lib/usageInvoices";
 
 export async function createInvoice(
     serviceRecordId: string,
@@ -50,7 +46,7 @@ export async function createInvoice(
     });
     if (existing) throw new Error("Invoice already exists for this service record and inventory system");
 
-    const invoiceNumber = await nextInvoiceNumber(fromUserId);
+    const invoiceNumber = await nextInvoiceNumber();
 
     const invoice = await prisma.invoice.create({
         data: {

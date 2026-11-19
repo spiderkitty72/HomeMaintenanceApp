@@ -3,11 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { refreshPredictions } from "@/lib/predictionRefresh";
 import { ensurePermission, checkPermission, canAccessAsset, ensureAssetAccess } from "@/lib/permissions";
 import { recalculateAssetUsage } from "./usage";
 import { addDays } from "date-fns";
+import { notifyUsageInvoices, syncUsageInvoices, type UsageInvoiceEvent } from "@/lib/usageInvoices";
 
 const ServiceRecordSchema = z.object({
     assetId: z.string(),
@@ -35,7 +37,9 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
 
     await ensurePermission("CREATE", "SERVICE");
     await ensureAssetAccess(data.assetId);
+    const userId = session.user.id;
 
+    let invoiceEvents: UsageInvoiceEvent[] = [];
     const result = await prisma.$transaction(async (tx) => {
         const serviceRecord = await tx.serviceRecord.create({
             data: {
@@ -123,10 +127,15 @@ export async function createServiceRecord(data: z.infer<typeof ServiceRecordSche
             }
         }
 
+        // Parts taken from someone else's inventory system are invoiced to whoever logged them
+        invoiceEvents = await syncUsageInvoices(tx, serviceRecord.id, userId);
+
         return serviceRecord;
     });
 
     revalidatePath(`/dashboard/asset/${data.assetId}`);
+    revalidatePath("/dashboard/invoices");
+    after(() => notifyUsageInvoices(invoiceEvents));
 
     // Update maintenance predictions
     await refreshPredictions(data.assetId);
@@ -244,7 +253,9 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
     }
 
     const { image, imageName, parts, fulfilledScheduleIds, ...serviceData } = data;
+    const userId = session.user.id;
 
+    let invoiceEvents: UsageInvoiceEvent[] = [];
     const result = await prisma.$transaction(async (tx) => {
         // 1. Revert current inventory changes per-part (fallback to record-level for old records)
         for (const p of existing.parts) {
@@ -350,11 +361,16 @@ export async function updateServiceRecord(id: string, data: z.infer<typeof Servi
         // Update asset current usage
         await recalculateAssetUsage(tx as any, existing.assetId);
 
+        // Keep unpaid invoices in line with the parts now used
+        invoiceEvents = await syncUsageInvoices(tx, id, userId);
+
         return updated;
     });
 
     revalidatePath(`/dashboard/asset/${existing.assetId}`);
     revalidatePath(`/dashboard/service/${id}`);
+    revalidatePath("/dashboard/invoices");
+    after(() => notifyUsageInvoices(invoiceEvents));
     revalidatePath("/dashboard/admin");
     await refreshPredictions(existing.assetId);
 
